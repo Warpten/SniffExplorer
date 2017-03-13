@@ -1,4 +1,6 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.Reflection;
+using System.Windows.Forms;
 
 namespace SniffExplorer.Utils
 {
@@ -15,6 +17,16 @@ namespace SniffExplorer.Utils
             {
                 action();
             }
+        }
+
+        public static MethodInfo GetMethod(this Type type, string methodName, Type types)
+        {
+            return type.GetMethod(methodName, new[] { types });
+        }
+
+        public static MethodInfo GetMethod(this Type type, string methodName, params Type[] types)
+        {
+            return type.GetMethod(methodName, types);
         }
     }
 }

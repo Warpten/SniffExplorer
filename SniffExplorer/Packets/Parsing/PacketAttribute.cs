@@ -61,7 +61,12 @@ namespace SniffExplorer.Packets.Parsing
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public sealed class WowStringAttribute : Attribute
     {
-        public WowStringAttribute() { }
+        public string PropertyName { get; set; }
+
+        public WowStringAttribute(string propertyName)
+        {
+            PropertyName = propertyName;
+        }
     }
 
     /// <summary>
@@ -86,11 +91,11 @@ namespace SniffExplorer.Packets.Parsing
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public sealed class StreamedSizeAttribute : Attribute
     {
-        public string FieldName { get; }
+        public string PropertyName { get; }
 
         public StreamedSizeAttribute(string arraySizeName)
         {
-            FieldName = arraySizeName;
+            PropertyName = arraySizeName;
         }
     }
 

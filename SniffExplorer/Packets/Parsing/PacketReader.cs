@@ -145,6 +145,12 @@ namespace SniffExplorer.Packets.Parsing
             return Encoding.UTF8.GetString(bytes.ToArray());
         }
 
+        public string ReadWoWString(int stringSize)
+        {
+            CheckValid(stringSize);
+            return Encoding.UTF8.GetString(ReadBytes(stringSize));
+        }
+
         public ulong ReadPackedUInt64()
         {
             return ReadPackedUInt64(ReadByte());

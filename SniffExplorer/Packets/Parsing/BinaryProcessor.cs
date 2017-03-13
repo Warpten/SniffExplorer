@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using SniffExplorer.Enums;
 using System.Linq.Expressions;
+using SniffExplorer.Utils;
 
 namespace SniffExplorer.Packets.Parsing
 {
@@ -129,7 +130,7 @@ namespace SniffExplorer.Packets.Parsing
 
                 bodyExpressions.Add(prop.PropertyType.IsArray ?
                     GenerateArrayReader(packetStructType, prop, argExpr, resultExpr) :
-                    GenerateFlatReader(prop, argExpr, resultExpr));
+                    GenerateFlatReader(packetStructType, prop, argExpr, resultExpr));
             }
 
             bodyExpressions.Add(Expression.Convert(resultExpr, typeof(IPacketStruct)));
@@ -159,7 +160,7 @@ namespace SniffExplorer.Packets.Parsing
                     $"Property {propInfo.Name} has multiple array size specifications!");
 
             if (relativeArraySizeAttr != null)
-                arraySizeExpr = Expression.MakeMemberAccess(tExpr, packetStructType.GetProperty(relativeArraySizeAttr.FieldName));
+                arraySizeExpr = Expression.MakeMemberAccess(tExpr, packetStructType.GetProperty(relativeArraySizeAttr.PropertyName));
             else
                 arraySizeExpr = Expression.Constant(absoluteArraySizeAttr.ArraySize);
 
@@ -176,27 +177,26 @@ namespace SniffExplorer.Packets.Parsing
                         Expression.LessThan(itrExpr, arraySizeExpr),
                         Expression.Assign(
                             Expression.ArrayAccess(propExpression, Expression.PostIncrementAssign(itrExpr)),
-                            GenerateValueReader(propInfo, argExpr)),
+                            GenerateValueReader(packetStructType, propInfo, argExpr, tExpr)),
                         Expression.Break(exitLabelExpr)),
                     exitLabelExpr));
         }
 
-        private static Expression GenerateFlatReader(PropertyInfo propInfo, Expression argExpr, Expression tExpr)
+        private static Expression GenerateFlatReader(Type packetStructType, PropertyInfo propInfo, Expression argExpr, Expression tExpr)
         {
             return Expression.Assign(Expression.MakeMemberAccess(tExpr, propInfo),
-                GenerateValueReader(propInfo, argExpr));
-        }
+                GenerateValueReader(packetStructType, propInfo, argExpr, tExpr));
+        } 
 
-        private static Expression GenerateValueReader(PropertyInfo propInfo, Expression argExpr)
+        private static Expression GenerateValueReader(Type packetStructType, PropertyInfo propInfo, Expression argExpr, Expression tExpr)
         {
             var bitSizeAttr = propInfo.GetCustomAttribute<BitFieldAttribute>();
             if (bitSizeAttr != null)
             {
                 if (bitSizeAttr.BitSize == 1)
-                    return Expression.Call(argExpr, typeof(PacketReader).GetMethod("ReadBit", Type.EmptyTypes));
+                    return Expression.Call(argExpr, ExpressionUtils.BitReader);
 
-                return Expression.Call(argExpr, typeof(PacketReader).GetMethod("ReadBits", new[] { typeof(int) }),
-                    Expression.Constant(bitSizeAttr.BitSize));
+                return Expression.Call(argExpr, ExpressionUtils.BitsReader, Expression.Constant(bitSizeAttr.BitSize));
             }
 
             var propType = propInfo.PropertyType;
@@ -207,56 +207,64 @@ namespace SniffExplorer.Packets.Parsing
             switch (Type.GetTypeCode(propType))
             {
                 case TypeCode.Int16:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadInt16", Type.EmptyTypes));
                 case TypeCode.Boolean:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadBool", Type.EmptyTypes));
                 case TypeCode.SByte:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadSByte", Type.EmptyTypes));
                 case TypeCode.Byte:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadByte", Type.EmptyTypes));
                 case TypeCode.UInt16:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadUInt16", Type.EmptyTypes));
                 case TypeCode.Int32:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadInt32", Type.EmptyTypes));
                 case TypeCode.UInt32:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadUInt32", Type.EmptyTypes));
                 case TypeCode.Int64:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadInt64", Type.EmptyTypes));
+                case TypeCode.Single:
+                case TypeCode.Double:
+                    return Expression.Call(argExpr, ExpressionUtils.TypeReaders[Type.GetTypeCode(propType)]);
                 case TypeCode.UInt64:
                     return Expression.Call(argExpr, packedAttr != null ?
-                            typeof(PacketReader).GetMethod("ReadPackedUInt64", Type.EmptyTypes) :
-                            typeof(PacketReader).GetMethod("ReadUInt64", Type.EmptyTypes));
-                case TypeCode.Single:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadSingle", Type.EmptyTypes));
-                case TypeCode.Double:
-                    return Expression.Call(argExpr,
-                        typeof(PacketReader).GetMethod("ReadDouble", Type.EmptyTypes));
+                        typeof(PacketReader).GetMethod("ReadPackedUInt64", Type.EmptyTypes) :
+                        ExpressionUtils.TypeReaders[TypeCode.UInt64]);
                 case TypeCode.DateTime:
                     return Expression.Call(ExpressionUtils.ServerEpoch,
-                        typeof(DateTime).GetMethod("AddSeconds", new[] { typeof(int) }),
-                        Expression.Call(argExpr, typeof(PacketReader).GetMethod("ReadInt32", Type.EmptyTypes)));
+                        ExpressionUtils.TypeReaders[TypeCode.DateTime],
+                        Expression.Call(argExpr, ExpressionUtils.TypeReaders[TypeCode.Int32]));
                 case TypeCode.String:
-                    throw new NotImplementedException();
-                default:
-                    throw new ArgumentOutOfRangeException();
+                {
+                    var stringAttr = propInfo.GetCustomAttribute<WowStringAttribute>();
+                    if (stringAttr != null)
+                        return Expression.Call(argExpr, typeof (PacketReader).GetMethod("ReadWoWString", typeof (int)),
+                            Expression.MakeMemberAccess(tExpr, packetStructType.GetProperty(stringAttr.PropertyName)));
+                    return Expression.Call(argExpr, typeof (PacketReader).GetMethod("ReadCString", Type.EmptyTypes));
+                }
             }
+
+            // Selecting off typecodes doesn't cut it
+            /// Handle specific types here - ObjectGuid, etc
+
+            return null;
         }
 
         private static class ExpressionUtils
         {
-            public static readonly Expression ServerEpoch = Expression.New(
-                    // ReSharper disable once AssignNullToNotNullAttribute
-                    typeof(DateTime).GetConstructor(new[] { typeof(int), typeof(int), typeof(int) }),
-                    Expression.Constant(2000), Expression.Constant(1), Expression.Constant(1));
+            public static readonly MethodInfo BitReader = typeof (PacketReader).GetMethod("ReadBit", Type.EmptyTypes);
+            public static readonly MethodInfo BitsReader = typeof (PacketReader).GetMethod("ReadBits", typeof (int));
+
+            public static readonly Expression<Func<int, DateTime>> ServerEpoch =
+                seconds => new DateTime(2000, 1, 1).AddSeconds(seconds);
+
+            public static readonly Dictionary<TypeCode, MethodInfo> TypeReaders = new Dictionary<TypeCode, MethodInfo>()
+            {
+                { TypeCode.Boolean, typeof (PacketReader).GetMethod("ReadBoolean", Type.EmptyTypes) },
+                { TypeCode.SByte,   typeof (PacketReader).GetMethod("ReadSByte", Type.EmptyTypes) },
+                { TypeCode.Int16,   typeof (PacketReader).GetMethod("ReadInt16", Type.EmptyTypes) },
+                { TypeCode.Int32,   typeof (PacketReader).GetMethod("ReadInt32", Type.EmptyTypes) },
+                { TypeCode.Int64,   typeof (PacketReader).GetMethod("ReadInt64", Type.EmptyTypes)},
+                { TypeCode.Byte,    typeof (PacketReader).GetMethod("ReadByte", Type.EmptyTypes) },
+                { TypeCode.UInt16,  typeof (PacketReader).GetMethod("ReadUInt16", Type.EmptyTypes) },
+                { TypeCode.UInt32,  typeof (PacketReader).GetMethod("ReadUInt32", Type.EmptyTypes) },
+                { TypeCode.UInt64,  typeof (PacketReader).GetMethod("ReadUInt64", Type.EmptyTypes) },
+                { TypeCode.Single,  typeof (PacketReader).GetMethod("ReadSingle", Type.EmptyTypes) },
+                { TypeCode.Double,  typeof (PacketReader).GetMethod("ReadDouble", Type.EmptyTypes) },
+
+                { TypeCode.DateTime, typeof(DateTime).GetMethod("AddSeconds", typeof(int)) }
+            };
         }
     }
 }
