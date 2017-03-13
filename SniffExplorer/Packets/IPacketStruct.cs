@@ -1,4 +1,5 @@
 ﻿using System;
+using SniffExplorer.Packets.Parsing;
 
 namespace SniffExplorer.Packets
 {

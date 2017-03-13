@@ -69,8 +69,7 @@ namespace SniffExplorer.Test
                 #endregion
                 BinaryProcessor.Process(ms);
 
-                var store = Store<UserClientAuthSession>.Values;
-                Console.WriteLine("Success!");
+                Console.WriteLine("{0}", Store.Opcodes.Count);
             }
 
         }

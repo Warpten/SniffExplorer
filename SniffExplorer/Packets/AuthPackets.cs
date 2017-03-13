@@ -24,10 +24,12 @@ namespace SniffExplorer.Packets
         [StreamedSize("RealmJoinTicketSize")]
         public byte[] RealmJoinTicket { get; set; }
 
+        #region IPacketStruct implementation
         [Ignore]
         public DateTime Date { get; set; }
 
         [Ignore]
         public uint ConnectionID { get; set; }
+        #endregion
     }
 }
