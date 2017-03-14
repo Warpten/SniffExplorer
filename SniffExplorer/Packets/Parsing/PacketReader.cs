@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 using SniffExplorer.Packets.Types;
+using SniffExplorer.Utils;
 
 namespace SniffExplorer.Packets.Parsing
 {
@@ -146,7 +148,7 @@ namespace SniffExplorer.Packets.Parsing
             return Encoding.UTF8.GetString(bytes.ToArray());
         }
 
-        public string ReadWoWString(int stringSize)
+        public string ReadString(int stringSize)
         {
             CheckValid(stringSize);
             return Encoding.UTF8.GetString(ReadBytes(stringSize));
@@ -181,6 +183,31 @@ namespace SniffExplorer.Packets.Parsing
             var objGuid = new ObjectGuid();
             objGuid.Read(this);
             return objGuid;
+        }
+
+        public unsafe T ReadStruct<T>() where T : struct
+        {
+            /*byte[] bytes = ReadBytes(Marshal.SizeOf(typeof(T)));
+
+            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            T theStructure = (T)Marshal.PtrToStructure(handle.AddrOfPinnedObject(), typeof(T));
+            handle.Free();
+
+            return theStructure;*/
+            if (SizeCache<T>.TypeRequiresMarshal)
+            {
+                throw new ArgumentException(
+                    "Cannot read a generic structure type that requires marshaling support. Read the structure out manually.");
+            }
+
+            // OPTIMIZATION!
+            var ret = new T();
+            fixed (byte* b = ReadBytes(SizeCache<T>.Size))
+            {
+                var tPtr = (byte*)SizeCache<T>.GetUnsafePtr(ref ret);
+                UnsafeNativeMethods.CopyMemory(tPtr, b, SizeCache<T>.Size);
+            }
+            return ret;/**/
         }
         #endregion
     }

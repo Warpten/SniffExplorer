@@ -17,11 +17,11 @@ namespace SniffExplorer.Packets.Types
 
         public virtual void Read(PacketReader reader)
         {
-            var hiMask = reader.ReadByte();
             var loMask = reader.ReadByte();
+            var hiMask = reader.ReadByte();
 
-            HighPart = reader.ReadPackedUInt64(hiMask);
             LowPart = reader.ReadPackedUInt64(loMask);
+            HighPart = reader.ReadPackedUInt64(hiMask);
         }
 
         public bool HasEntry()

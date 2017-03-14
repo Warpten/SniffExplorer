@@ -54,12 +54,14 @@
   <ItemGroup>
     <Compile Include="Enums\Opcode.cs" />
     <Compile Include="Packets\AuthPackets.cs" />
+    <Compile Include="Packets\CharacterStructs.cs" />
     <Compile Include="Packets\GuildPackets.cs" />
     <Compile Include="Packets\IPacketStruct.cs" />
     <Compile Include="Packets\Parsing\BinaryProcessor.cs" />
     <Compile Include="Packets\Parsing\PacketAttribute.cs" />
     <Compile Include="Packets\Parsing\PacketReader.cs" />
     <Compile Include="Packets\Parsing\Store.cs" />
+    <Compile Include="Packets\Parsing\TypeReaders.cs" />
     <Compile Include="Packets\Types\HighGuid.cs" />
     <Compile Include="Packets\Types\ObjectGuid.cs" />
     <Compile Include="UI\Forms\MainForm.cs">

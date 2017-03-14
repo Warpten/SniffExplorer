@@ -23,12 +23,13 @@ namespace SniffExplorer.UI.Forms
                 toolStripStatusLabel1.Text = $@"Parsed {opcode} ...";
             });
             BinaryProcessor.OnSniffLoaded += () => this.InvokeIfRequired(() => {
+                var l = Store.Opcodes.Count;
             });
         }
 
         private void LoadSniff(object sender, EventArgs e)
         {
-            var fileDialog = new OpenFileDialog {Filter = @"PKT files|.pkt"};
+            var fileDialog = new OpenFileDialog {Filter = @"PKT files|*.pkt"};
 
             if (fileDialog.ShowDialog() != DialogResult.OK)
                 return;

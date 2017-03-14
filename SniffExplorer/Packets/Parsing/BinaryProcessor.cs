@@ -4,6 +4,8 @@ using System.IO;
 using System.Reflection;
 using SniffExplorer.Enums;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
+using SniffExplorer.Packets.Types;
 using SniffExplorer.Utils;
 
 namespace SniffExplorer.Packets.Parsing
@@ -15,9 +17,6 @@ namespace SniffExplorer.Packets.Parsing
 
         private static Dictionary<OpcodeClient, Type> _clientOpcodeStructs = new Dictionary<OpcodeClient, Type>();
         private static Dictionary<OpcodeServer, Type> _serverOpcodeStructs = new Dictionary<OpcodeServer, Type>();
-
-        private static Dictionary<OpcodeClient, Func<PacketReader, IPacketStruct>> _clientReaders = new Dictionary<OpcodeClient, Func<PacketReader, IPacketStruct>>();
-        private static Dictionary<OpcodeServer, Func<PacketReader, IPacketStruct>> _serverReaders = new Dictionary<OpcodeServer, Func<PacketReader, IPacketStruct>>();
 
         public static event Action<string> OnOpcodeParsed;
         public static event Action OnSniffLoaded;
@@ -52,7 +51,9 @@ namespace SniffExplorer.Packets.Parsing
                 sniffStream.BaseStream.Position += 3 + 2 + 1;
                 Build = sniffStream.ReadUInt32();
                 Locale = System.Text.Encoding.UTF8.GetString(sniffStream.ReadBytes(4));
-                sniffStream.BaseStream.Position += 40 + 4 + 4 + 4;
+                sniffStream.BaseStream.Position += 40 + 4 + 4;
+                var optDataLength = sniffStream.ReadInt32();
+                sniffStream.BaseStream.Position += optDataLength;
 
                 while (sniffStream.BaseStream.Position < sniffStream.BaseStream.Length)
                 {
@@ -64,25 +65,29 @@ namespace SniffExplorer.Packets.Parsing
                     sniffStream.BaseStream.Position += optionalHeaderLength;
                     var opcode = sniffStream.ReadUInt32();
 
-                    Type targetType;
-                    switch (direction)
-                    {
-                        case 0x47534D43u: // CMSG
-                            targetType = _clientOpcodeStructs[(OpcodeClient) opcode];
-                            OnOpcodeParsed?.Invoke(((OpcodeClient) opcode).ToString());
-                            break;
-                        case 0x47534D53u: // SMSG
-                            targetType = _serverOpcodeStructs[(OpcodeServer) opcode];
-                            OnOpcodeParsed?.Invoke(((OpcodeServer) opcode).ToString());
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-
                     // Yuck.
                     using (var memoryStream = new MemoryStream(sniffStream.ReadBytes(fullSize), false))
                     using (var packetReader = new PacketReader(memoryStream, fullSize))
                     {
+                        Type targetType;
+                        switch (direction)
+                        {
+                            case 0x47534D43u: // CMSG
+                                if (!_clientOpcodeStructs.ContainsKey((OpcodeClient) opcode))
+                                    continue;
+                                targetType = _clientOpcodeStructs[(OpcodeClient) opcode];
+                                OnOpcodeParsed?.Invoke(((OpcodeClient) opcode).ToString());
+                                break;
+                            case 0x47534D53u: // SMSG
+                                if (!_serverOpcodeStructs.ContainsKey((OpcodeServer) opcode))
+                                    continue;
+                                targetType = _serverOpcodeStructs[(OpcodeServer) opcode];
+                                OnOpcodeParsed?.Invoke(((OpcodeServer) opcode).ToString());
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+
                         var instance = (IPacketStruct) Activator.CreateInstance(targetType);
                         instance.Date = new DateTime(1970, 1, 1).AddSeconds(timeStamp);
                         instance.ConnectionID = connectionID;
@@ -91,22 +96,25 @@ namespace SniffExplorer.Packets.Parsing
                             case 0x47534D43u: // CMSG
                             {
                                 var opcodeEnum = (OpcodeClient) opcode;
-                                if (!_clientReaders.ContainsKey(opcodeEnum))
-                                    _clientReaders[opcodeEnum] = GeneratePacketReader(targetType);
+                                if (!PacketTypeReadersStore<IPacketStruct>.ContainsKey(targetType))
+                                    GeneratePacketReader<IPacketStruct>(targetType);
 
-                                Store.Insert(opcodeEnum, _clientReaders[opcodeEnum](packetReader));
+                                Store.Insert(opcodeEnum, PacketTypeReadersStore<IPacketStruct>.Get(targetType)(packetReader));
                                 break;
                             }
                             case 0x47534D53u: // SMSG
                             {
                                 var opcodeEnum = (OpcodeServer) opcode;
-                                if (!_serverReaders.ContainsKey(opcodeEnum))
-                                    _serverReaders[opcodeEnum] = GeneratePacketReader(targetType);
+                                if (!PacketTypeReadersStore<IPacketStruct>.ContainsKey(targetType))
+                                    GeneratePacketReader<IPacketStruct>(targetType);
 
-                                Store.Insert(opcodeEnum, _serverReaders[opcodeEnum](packetReader));
+                                Store.Insert(opcodeEnum, PacketTypeReadersStore<IPacketStruct>.Get(targetType)(packetReader));
                                 break;
                             }
                         }
+
+                        if (memoryStream.Position != memoryStream.Length)
+                            Console.WriteLine("Failed to parse a full opcode!");
                     }
                 }
 
@@ -114,12 +122,43 @@ namespace SniffExplorer.Packets.Parsing
             }
         }
 
-        private static Func<PacketReader, IPacketStruct> GeneratePacketReader(Type packetStructType)
+        private static void GeneratePacketReader<T>(Type structureType)
         {
-            var argExpr = Expression.Parameter(typeof(PacketReader));
-            var resultExpr = Expression.Variable(packetStructType);
+            var packetReaderExpr = Expression.Parameter(typeof(PacketReader));
+            var structureExpr = Expression.Variable(structureType);
             var bodyExpressions = new List<Expression> {
-                Expression.Assign(resultExpr, Expression.New(packetStructType))
+                Expression.Assign(structureExpr, Expression.New(structureType))
+            };
+
+            // ReSharper disable once LoopCanBeConvertedToQuery
+            foreach (var prop in structureType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (prop.GetCustomAttribute(typeof(IgnoreAttribute)) != null)
+                    continue;
+
+                bodyExpressions.Add(prop.PropertyType.IsArray ?
+                    GenerateArrayReader(structureType, prop, packetReaderExpr, structureExpr) :
+                    GenerateFlatReader(structureType, prop, packetReaderExpr, structureExpr));
+            }
+
+            bodyExpressions.Add(Expression.Convert(structureExpr, typeof(IPacketStruct)));
+
+            var lambda = Expression.Lambda<Func<PacketReader, T>>(
+                Expression.Block(new[] { structureExpr }, bodyExpressions),
+                packetReaderExpr);
+            var compiledExpression = lambda.Compile();
+
+            PacketTypeReadersStore<T>.Store(structureType, compiledExpression);
+        }
+
+        private static BlockExpression GenerateSubStructureReader(Type packetStructType, ParameterExpression argExpr)
+        {
+            if (TypeReadersStore.ContainsKey(packetStructType))
+                return TypeReadersStore.Get(packetStructType);
+
+            var subStructureExpr = Expression.Variable(packetStructType);
+            var bodyExpressions = new List<Expression> {
+                Expression.Assign(subStructureExpr, Expression.New(packetStructType))
             };
 
             // ReSharper disable once LoopCanBeConvertedToQuery
@@ -129,21 +168,19 @@ namespace SniffExplorer.Packets.Parsing
                     continue;
 
                 bodyExpressions.Add(prop.PropertyType.IsArray ?
-                    GenerateArrayReader(packetStructType, prop, argExpr, resultExpr) :
-                    GenerateFlatReader(packetStructType, prop, argExpr, resultExpr));
+                    GenerateArrayReader(packetStructType, prop, argExpr, subStructureExpr) :
+                    GenerateFlatReader(packetStructType, prop, argExpr, subStructureExpr));
             }
 
-            bodyExpressions.Add(Expression.Convert(resultExpr, typeof(IPacketStruct)));
+            bodyExpressions.Add(subStructureExpr);
 
-            var lambda = Expression.Lambda<Func<PacketReader, IPacketStruct>>(
-                Expression.Block(new[] { resultExpr }, bodyExpressions),
-                argExpr);
-            var compiledExpression = lambda.Compile();
+            var block = Expression.Block(new[] {subStructureExpr}, bodyExpressions);
 
-            return compiledExpression;
+            TypeReadersStore.Store(packetStructType, block);
+            return block;
         }
 
-        private static Expression GenerateArrayReader(Type packetStructType, PropertyInfo propInfo, Expression argExpr, Expression tExpr)
+        private static Expression GenerateArrayReader(Type packetStructType, PropertyInfo propInfo, ParameterExpression argExpr, Expression tExpr)
         {
             var propExpression = Expression.MakeMemberAccess(tExpr, propInfo);
             var relativeArraySizeAttr = propInfo.GetCustomAttribute<StreamedSizeAttribute>();
@@ -182,13 +219,13 @@ namespace SniffExplorer.Packets.Parsing
                     exitLabelExpr));
         }
 
-        private static Expression GenerateFlatReader(Type packetStructType, PropertyInfo propInfo, Expression argExpr, Expression tExpr)
+        private static Expression GenerateFlatReader(Type packetStructType, PropertyInfo propInfo, ParameterExpression argExpr, Expression tExpr)
         {
             return Expression.Assign(Expression.MakeMemberAccess(tExpr, propInfo),
                 GenerateValueReader(packetStructType, propInfo, argExpr, tExpr));
         } 
 
-        private static Expression GenerateValueReader(Type packetStructType, PropertyInfo propInfo, Expression argExpr, Expression tExpr)
+        private static Expression GenerateValueReader(Type packetStructType, PropertyInfo propInfo, ParameterExpression argExpr, Expression tExpr)
         {
             var bitSizeAttr = propInfo.GetCustomAttribute<BitFieldAttribute>();
             if (bitSizeAttr != null)
@@ -234,18 +271,21 @@ namespace SniffExplorer.Packets.Parsing
                 }
             }
 
-            // Selecting off typecodes doesn't cut it
-            /// Handle specific types here - ObjectGuid, etc
+            if (propInfo.PropertyType.IsAssignableFrom(typeof (ObjectGuid)))
+                return Expression.Call(argExpr, ExpressionUtils.ObjectGuid);
 
-            return null;
+            return GenerateSubStructureReader(propType, argExpr);
+            // return Expression.Call(argExpr, ExpressionUtils.Struct.MakeGenericMethod(propType));
         }
 
         private static class ExpressionUtils
         {
+            public static readonly MethodInfo Struct = typeof (PacketReader).GetMethod("ReadStruct");
+
             public static readonly MethodInfo ObjectGuid = typeof (PacketReader).GetMethod("ReadObjectGuid",
                 Type.EmptyTypes);
 
-            public static readonly MethodInfo String = typeof (PacketReader).GetMethod("ReadWoWString",
+            public static readonly MethodInfo String = typeof (PacketReader).GetMethod("ReadString",
                 typeof (int));
             public static readonly MethodInfo CString = typeof (PacketReader).GetMethod("ReadString",
                 Type.EmptyTypes);
