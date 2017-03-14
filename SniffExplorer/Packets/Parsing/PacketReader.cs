@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using SniffExplorer.Packets.Types;
 
 namespace SniffExplorer.Packets.Parsing
 {
@@ -156,7 +157,7 @@ namespace SniffExplorer.Packets.Parsing
             return ReadPackedUInt64(ReadByte());
         }
 
-        private ulong ReadPackedUInt64(byte mask)
+        public ulong ReadPackedUInt64(byte mask)
         {
             if (mask == 0)
                 return 0;
@@ -173,6 +174,13 @@ namespace SniffExplorer.Packets.Parsing
             }
 
             return res;
+        }
+
+        public ObjectGuid ReadObjectGuid()
+        {
+            var objGuid = new ObjectGuid();
+            objGuid.Read(this);
+            return objGuid;
         }
         #endregion
     }

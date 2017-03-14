@@ -60,6 +60,8 @@
     <Compile Include="Packets\Parsing\PacketAttribute.cs" />
     <Compile Include="Packets\Parsing\PacketReader.cs" />
     <Compile Include="Packets\Parsing\Store.cs" />
+    <Compile Include="Packets\Types\HighGuid.cs" />
+    <Compile Include="Packets\Types\ObjectGuid.cs" />
     <Compile Include="UI\Forms\MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
