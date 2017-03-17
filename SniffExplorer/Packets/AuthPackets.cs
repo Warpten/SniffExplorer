@@ -5,7 +5,7 @@ using SniffExplorer.Packets.Parsing;
 namespace SniffExplorer.Packets
 {
     [ClientPacket(OpcodeClient.CMSG_AUTH_SESSION)]
-    public struct UserClientAuthSession : IPacketStruct
+    public struct UserClientAuthSession
     {
         public ulong DosResponse { get; set; }
         public ushort Build { get; set; }
@@ -23,13 +23,5 @@ namespace SniffExplorer.Packets
         public int RealmJoinTicketSize { get; set; }
         [StreamedSize("RealmJoinTicketSize")]
         public byte[] RealmJoinTicket { get; set; }
-
-        #region IPacketStruct implementation
-        [Ignore]
-        public DateTime Date { get; set; }
-
-        [Ignore]
-        public uint ConnectionID { get; set; }
-        #endregion
     }
 }

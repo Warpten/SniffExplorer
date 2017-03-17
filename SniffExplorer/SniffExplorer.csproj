@@ -56,7 +56,6 @@
     <Compile Include="Packets\AuthPackets.cs" />
     <Compile Include="Packets\CharacterStructs.cs" />
     <Compile Include="Packets\GuildPackets.cs" />
-    <Compile Include="Packets\IPacketStruct.cs" />
     <Compile Include="Packets\Parsing\BinaryProcessor.cs" />
     <Compile Include="Packets\Parsing\PacketAttribute.cs" />
     <Compile Include="Packets\Parsing\PacketReader.cs" />

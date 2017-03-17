@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using SniffExplorer.Enums;
 using SniffExplorer.Utils;
 
@@ -6,17 +7,39 @@ namespace SniffExplorer.Packets.Parsing
 {
     public static class Store
     {
-        public static Dictionary<Either<OpcodeClient, OpcodeServer>, IPacketStruct> Opcodes { get; } =
-            new Dictionary<Either<OpcodeClient, OpcodeServer>, IPacketStruct>();
-
-        public static void Insert(OpcodeClient opcode, IPacketStruct instance)
+        public class Record
         {
-            Opcodes[new Either<OpcodeClient, OpcodeServer>(opcode)] = instance;
+            public Either<OpcodeClient, OpcodeServer> Opcode { get; set; }
+            public ValueType Packet { get; set; }
+            
+            public DateTime TimeStamp { get; set; }
+            public uint ConnectionID { get; set; }
         }
 
-        public static void Insert(OpcodeServer opcode, IPacketStruct instance)
+        public static List<Record> Opcodes { get; } =
+            new List<Record>();
+
+        public static void Insert(OpcodeClient opcode, ValueType instance, uint connectionId, DateTime timeStamp)
         {
-            Opcodes[new Either<OpcodeClient, OpcodeServer>(opcode)] = instance;
+            Opcodes.Add(new Record {
+                Opcode = new Either<OpcodeClient, OpcodeServer>(opcode),
+                Packet = instance,
+
+                ConnectionID = connectionId,
+                TimeStamp = timeStamp
+            });
+        }
+
+        public static void Insert(OpcodeServer opcode, ValueType instance, uint connectionId, DateTime timeStamp)
+        {
+            Opcodes.Add(new Record
+            {
+                Opcode = new Either<OpcodeClient, OpcodeServer>(opcode),
+                Packet = instance,
+
+                ConnectionID = connectionId,
+                TimeStamp = timeStamp
+            });
         }
     }
 }

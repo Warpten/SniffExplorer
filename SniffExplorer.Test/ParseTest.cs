@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SniffExplorer.Enums;
-using SniffExplorer.Packets;
 using SniffExplorer.Packets.Parsing;
 
 namespace SniffExplorer.Test
@@ -26,7 +25,7 @@ namespace SniffExplorer.Test
                 // Write a single dummy opcode
                 writer.Write(0x47534D43u); // CMSG
                 writer.Write(0); // Connection ID
-                writer.Write(0); // Timestamp
+                writer.Write(1489646141); // Timestamp
                 writer.Write(0); // Opt. Data Length
                 var sizeOffset = ms.Position;
                 writer.Write(0); // placeholder

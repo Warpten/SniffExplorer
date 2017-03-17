@@ -8,16 +8,16 @@ using System.Threading.Tasks;
 
 namespace SniffExplorer.Packets.Parsing
 {
-    public static class PacketTypeReadersStore<T>
+    public static class PacketTypeReadersStore
     {
-        private static Dictionary<Type, Func<PacketReader, T>> _values = new Dictionary<Type, Func<PacketReader, T>>();
+        private static Dictionary<Type, Func<PacketReader, ValueType>> _values = new Dictionary<Type, Func<PacketReader, ValueType>>();
 
-        public static void Store(Type key, Func<PacketReader, T> value)
+        public static void Store(Type key, Func<PacketReader, ValueType> value)
         {
             _values[key] = value;
         }
 
-        public static Func<PacketReader, T> Get(Type key)
+        public static Func<PacketReader, ValueType> Get(Type key)
         {
             return _values[key];
         }
