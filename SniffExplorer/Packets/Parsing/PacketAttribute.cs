@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Linq.Expressions;
 using SniffExplorer.Enums;
+using SniffExplorer.Utils;
 
 namespace SniffExplorer.Packets.Parsing
 {
@@ -34,7 +36,7 @@ namespace SniffExplorer.Packets.Parsing
     }
 
     /// <summary>
-    /// Use this attribute to have the packets deserializer ignore
+    /// Use this attribute to have the packets de-serializer ignore
     /// the associated property.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
@@ -45,8 +47,8 @@ namespace SniffExplorer.Packets.Parsing
 
     /// <summary>
     /// Use this attribute to have 64-bits field be read using
-    /// <see cref="Packet{T}.ReadPackedUInt64"/> instead of
-    /// <see cref="Packet{T}.ReadUInt64"/>
+    /// <see cref="PacketReader.ReadPackedUInt64()"/> instead of
+    /// <see cref="PacketReader.ReadUInt64()"/>
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public sealed class PackedFieldAttribute : Attribute
@@ -56,16 +58,25 @@ namespace SniffExplorer.Packets.Parsing
 
     /// <summary>
     /// Use this attribute to decorate strings that have their lengths sent
-    /// separately in the packet.
+    /// separately in the packet. If the size is preceding the string itself,
+    /// use the <see cref="StreamedSizeAttribute(bool)"/> constructor,
+    /// and mark the string with a bit size if needed.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public sealed class WowStringAttribute : Attribute
+    public sealed class StreamedSizeAttribute : Attribute
     {
-        public string PropertyName { get; set; }
+        public string PropertyName { get; }
+        public bool InPlace { get; }
 
-        public WowStringAttribute(string propertyName)
+        public StreamedSizeAttribute(string propertyName)
         {
             PropertyName = propertyName;
+            InPlace = false;
+        }
+
+        public StreamedSizeAttribute(bool inPlace = true)
+        {
+            InPlace = inPlace;
         }
     }
 
@@ -82,20 +93,12 @@ namespace SniffExplorer.Packets.Parsing
         {
             BitSize = bitSize;
         }
-    }
 
-    /// <summary>
-    /// Use this attribute to bind the size of an array to a property
-    /// read earlier during deserialization.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public sealed class StreamedSizeAttribute : Attribute
-    {
-        public string PropertyName { get; }
-
-        public StreamedSizeAttribute(string arraySizeName)
+        internal Expression GetCallExpression(Expression argumentExpression)
         {
-            PropertyName = arraySizeName;
+            return BitSize == 1 ?
+                Expression.Call(argumentExpression, ExpressionUtils.Bit) :
+                Expression.Call(argumentExpression, ExpressionUtils.Bits, Expression.Constant(BitSize));
         }
     }
 

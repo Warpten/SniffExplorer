@@ -87,7 +87,6 @@ namespace SniffExplorer.Packets.Parsing
                                 throw new ArgumentOutOfRangeException();
                         }
 
-                        var instance = (ValueType) Activator.CreateInstance(targetType);
                         switch (direction)
                         {
                             case 0x47534D43u: // CMSG
@@ -103,7 +102,7 @@ namespace SniffExplorer.Packets.Parsing
                             {
                                 var opcodeEnum = (OpcodeServer) opcode;
                                 if (!PacketTypeReadersStore.ContainsKey(targetType))
-                                        GeneratePacketReader(targetType);
+                                    GeneratePacketReader(targetType);
 
                                 Store.Insert(opcodeEnum, PacketTypeReadersStore.Get(targetType)(packetReader), connectionID, timeStamp);
                                 break;
@@ -182,21 +181,30 @@ namespace SniffExplorer.Packets.Parsing
             var propExpression = Expression.MakeMemberAccess(tExpr, propInfo);
             var relativeArraySizeAttr = propInfo.GetCustomAttribute<StreamedSizeAttribute>();
             var absoluteArraySizeAttr = propInfo.GetCustomAttribute<FixedSizeAttribute>();
+            var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr);
 
-            Expression arraySizeExpr;
-
-            if (relativeArraySizeAttr == null && absoluteArraySizeAttr == null)
-                throw new InvalidOperationException(
-                    $"Property {propInfo.Name} is missing an array size specification!");
-
-            if (relativeArraySizeAttr != null && absoluteArraySizeAttr != null)
-                throw new InvalidOperationException(
-                    $"Property {propInfo.Name} has multiple array size specifications!");
-
+            Expression arraySizeExpr = null; // Never null, keep compiler happy
             if (relativeArraySizeAttr != null)
-                arraySizeExpr = Expression.MakeMemberAccess(tExpr, packetStructType.GetProperty(relativeArraySizeAttr.PropertyName));
-            else
+            {
+                if (absoluteArraySizeAttr != null)
+                    throw new InvalidOperationException(
+                        $"Property {propInfo.Name} has multiple array size specifications!");
+
+                if (relativeArraySizeAttr.InPlace)
+                    arraySizeExpr = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr) ??
+                        Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]);
+                else
+                    arraySizeExpr = Expression.MakeMemberAccess(tExpr,
+                        packetStructType.GetProperty(relativeArraySizeAttr.PropertyName));
+            }
+            if (absoluteArraySizeAttr != null)
+            {
+                if (relativeArraySizeAttr != null)
+                    throw new InvalidOperationException(
+                        $"Property {propInfo.Name} is missing an array size specification!");
+
                 arraySizeExpr = Expression.Constant(absoluteArraySizeAttr.ArraySize);
+            }
 
             // ReSharper disable once AssignNullToNotNullAttribute
             var arrayInitExpr = Expression.New(propInfo.PropertyType.GetConstructor(new[] { typeof(int) }), arraySizeExpr);
@@ -224,14 +232,7 @@ namespace SniffExplorer.Packets.Parsing
 
         private static Expression GenerateValueReader(Type packetStructType, PropertyInfo propInfo, ParameterExpression argExpr, Expression tExpr)
         {
-            var bitSizeAttr = propInfo.GetCustomAttribute<BitFieldAttribute>();
-            if (bitSizeAttr != null)
-            {
-                if (bitSizeAttr.BitSize == 1)
-                    return Expression.Call(argExpr, ExpressionUtils.Bit);
-
-                return Expression.Call(argExpr, ExpressionUtils.Bits, Expression.Constant(bitSizeAttr.BitSize));
-            }
+            var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr);
 
             var propType = propInfo.PropertyType;
             if (propType.IsArray)
@@ -244,14 +245,17 @@ namespace SniffExplorer.Packets.Parsing
             var typeCode = Type.GetTypeCode(propType);
             switch (typeCode)
             {
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
                 case TypeCode.Int16:
                 case TypeCode.Boolean:
                 case TypeCode.SByte:
                 case TypeCode.Byte:
                 case TypeCode.UInt16:
-                case TypeCode.Int32:
-                case TypeCode.UInt32:
                 case TypeCode.Int64:
+                    if (bitReaderExpression != null)
+                        return bitReaderExpression;
+                    goto case TypeCode.Single;
                 case TypeCode.Single:
                 case TypeCode.Double:
                     return Expression.Call(argExpr, ExpressionUtils.Base[typeCode]);
@@ -264,10 +268,16 @@ namespace SniffExplorer.Packets.Parsing
                         Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
                 case TypeCode.String:
                 {
-                    var stringAttr = propInfo.GetCustomAttribute<WowStringAttribute>();
+                    var stringAttr = propInfo.GetCustomAttribute<StreamedSizeAttribute>();
                     if (stringAttr != null)
+                    {
+                        if (!stringAttr.InPlace)
+                            return Expression.Call(argExpr, ExpressionUtils.String,
+                                Expression.MakeMemberAccess(tExpr, packetStructType.GetProperty(stringAttr.PropertyName)));
+
                         return Expression.Call(argExpr, ExpressionUtils.String,
-                            Expression.MakeMemberAccess(tExpr, packetStructType.GetProperty(stringAttr.PropertyName)));
+                            bitReaderExpression ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
+                    }
                     return Expression.Call(argExpr, ExpressionUtils.CString);
                 }
             }
@@ -276,40 +286,6 @@ namespace SniffExplorer.Packets.Parsing
                 return Expression.Call(argExpr, ExpressionUtils.ObjectGuid);
 
             return GenerateSubStructureReader(propType, argExpr);
-        }
-
-        private static class ExpressionUtils
-        {
-            public static readonly MethodInfo ObjectGuid = typeof (PacketReader).GetMethod("ReadObjectGuid",
-                Type.EmptyTypes);
-            public static readonly MethodInfo String = typeof (PacketReader).GetMethod("ReadString",
-                typeof (int));
-            public static readonly MethodInfo CString = typeof (PacketReader).GetMethod("ReadString",
-                Type.EmptyTypes);
-
-            public static readonly MethodInfo PackedUInt64 = typeof (PacketReader).GetMethod("ReadPackedUInt64",
-                Type.EmptyTypes);
-
-            public static readonly MethodInfo Bit = typeof (PacketReader).GetMethod("ReadBit", Type.EmptyTypes);
-            public static readonly MethodInfo Bits = typeof (PacketReader).GetMethod("ReadBits", typeof (int));
-
-            public static readonly Func<int, DateTime> ServerEpoch =
-                seconds => new DateTime(2000, 1, 1).AddSeconds(seconds);
-
-            public static readonly Dictionary<TypeCode, MethodInfo> Base = new Dictionary<TypeCode, MethodInfo>()
-            {
-                { TypeCode.Boolean, typeof (PacketReader).GetMethod("ReadBoolean", Type.EmptyTypes) },
-                { TypeCode.SByte,   typeof (PacketReader).GetMethod("ReadSByte", Type.EmptyTypes) },
-                { TypeCode.Int16,   typeof (PacketReader).GetMethod("ReadInt16", Type.EmptyTypes) },
-                { TypeCode.Int32,   typeof (PacketReader).GetMethod("ReadInt32", Type.EmptyTypes) },
-                { TypeCode.Int64,   typeof (PacketReader).GetMethod("ReadInt64", Type.EmptyTypes) },
-                { TypeCode.Byte,    typeof (PacketReader).GetMethod("ReadByte", Type.EmptyTypes) },
-                { TypeCode.UInt16,  typeof (PacketReader).GetMethod("ReadUInt16", Type.EmptyTypes) },
-                { TypeCode.UInt32,  typeof (PacketReader).GetMethod("ReadUInt32", Type.EmptyTypes) },
-                { TypeCode.UInt64,  typeof (PacketReader).GetMethod("ReadUInt64", Type.EmptyTypes) },
-                { TypeCode.Single,  typeof (PacketReader).GetMethod("ReadSingle", Type.EmptyTypes) },
-                { TypeCode.Double,  typeof (PacketReader).GetMethod("ReadDouble", Type.EmptyTypes) },
-            };
         }
     }
 }

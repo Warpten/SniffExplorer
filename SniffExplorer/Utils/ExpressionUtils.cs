@@ -1,0 +1,41 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
+using SniffExplorer.Packets.Parsing;
+
+namespace SniffExplorer.Utils
+{
+    public static class ExpressionUtils
+    {
+        public static readonly MethodInfo ObjectGuid = typeof(PacketReader).GetMethod("ReadObjectGuid",
+            Type.EmptyTypes);
+        public static readonly MethodInfo String = typeof(PacketReader).GetMethod("ReadString",
+            typeof(int));
+        public static readonly MethodInfo CString = typeof(PacketReader).GetMethod("ReadString",
+            Type.EmptyTypes);
+
+        public static readonly MethodInfo PackedUInt64 = typeof(PacketReader).GetMethod("ReadPackedUInt64",
+            Type.EmptyTypes);
+
+        public static readonly MethodInfo Bit = typeof(PacketReader).GetMethod("ReadBit", Type.EmptyTypes);
+        public static readonly MethodInfo Bits = typeof(PacketReader).GetMethod("ReadBits", typeof(int));
+
+        public static readonly Func<int, DateTime> ServerEpoch =
+            seconds => new DateTime(2000, 1, 1).AddSeconds(seconds);
+
+        public static readonly Dictionary<TypeCode, MethodInfo> Base = new Dictionary<TypeCode, MethodInfo>()
+            {
+                { TypeCode.Boolean, typeof (PacketReader).GetMethod("ReadBoolean", Type.EmptyTypes) },
+                { TypeCode.SByte,   typeof (PacketReader).GetMethod("ReadSByte", Type.EmptyTypes) },
+                { TypeCode.Int16,   typeof (PacketReader).GetMethod("ReadInt16", Type.EmptyTypes) },
+                { TypeCode.Int32,   typeof (PacketReader).GetMethod("ReadInt32", Type.EmptyTypes) },
+                { TypeCode.Int64,   typeof (PacketReader).GetMethod("ReadInt64", Type.EmptyTypes) },
+                { TypeCode.Byte,    typeof (PacketReader).GetMethod("ReadByte", Type.EmptyTypes) },
+                { TypeCode.UInt16,  typeof (PacketReader).GetMethod("ReadUInt16", Type.EmptyTypes) },
+                { TypeCode.UInt32,  typeof (PacketReader).GetMethod("ReadUInt32", Type.EmptyTypes) },
+                { TypeCode.UInt64,  typeof (PacketReader).GetMethod("ReadUInt64", Type.EmptyTypes) },
+                { TypeCode.Single,  typeof (PacketReader).GetMethod("ReadSingle", Type.EmptyTypes) },
+                { TypeCode.Double,  typeof (PacketReader).GetMethod("ReadDouble", Type.EmptyTypes) },
+            };
+    }
+}

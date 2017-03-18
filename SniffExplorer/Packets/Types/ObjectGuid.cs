@@ -46,18 +46,12 @@ namespace SniffExplorer.Packets.Types
 
             if (HasEntry())
             {
-                // ReSharper disable once UseStringInterpolation
-                return string.Format("Full: 0x{0}{1} {2}/{3} R{4}/S{5} Map: {6} Entry: {7} Low: {8}", HighPart.ToString("X16"), LowPart.ToString("X16"),
-                    HighType, SubType, RealmId, ServerId, MapId,
-                    Entry, Low);
+                return
+                    $"Full: 0x{HighPart.ToString("X16")}{LowPart.ToString("X16")} {HighType}/{SubType} R{RealmId}/S{ServerId} Map: {MapId} Entry: {Entry} Low: {Low}";
             }
 
-            // TODO: Implement extra format for battleground, see WowGuid64.ToString()
-
-            // ReSharper disable once UseStringInterpolation
-            return string.Format("Full: 0x{0}{1} {2}/{3} R{4}/S{5} Map: {6} Low: {7}", HighPart.ToString("X16"), Low.ToString("X16"),
-                    HighType, SubType, RealmId, ServerId, MapId,
-                    Low);
+            return
+                $"Full: 0x{HighPart.ToString("X16")}{Low.ToString("X16")} {HighType}/{SubType} R{RealmId}/S{ServerId} Map: {MapId} Low: {Low}";
         }
     }
 }
