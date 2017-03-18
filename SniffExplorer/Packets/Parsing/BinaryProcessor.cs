@@ -92,19 +92,19 @@ namespace SniffExplorer.Packets.Parsing
                             case 0x47534D43u: // CMSG
                             {
                                 var opcodeEnum = (OpcodeClient) opcode;
-                                if (!PacketTypeReadersStore.ContainsKey(targetType))
+                                if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
                                     GeneratePacketReader(targetType);
 
-                                Store.Insert(opcodeEnum, PacketTypeReadersStore.Get(targetType)(packetReader), connectionID, timeStamp);
+                                Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
                                 break;
                             }
                             case 0x47534D53u: // SMSG
                             {
                                 var opcodeEnum = (OpcodeServer) opcode;
-                                if (!PacketTypeReadersStore.ContainsKey(targetType))
+                                if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
                                     GeneratePacketReader(targetType);
 
-                                Store.Insert(opcodeEnum, PacketTypeReadersStore.Get(targetType)(packetReader), connectionID, timeStamp);
+                                Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
                                 break;
                             }
                         }
@@ -144,13 +144,13 @@ namespace SniffExplorer.Packets.Parsing
                 packetReaderExpr);
             var compiledExpression = lambda.Compile();
 
-            PacketTypeReadersStore.Store(structureType, compiledExpression);
+            TypeReadersStore<Func<PacketReader, ValueType>>.Store(structureType, compiledExpression);
         }
 
         private static BlockExpression GenerateSubStructureReader(Type packetStructType, ParameterExpression argExpr)
         {
-            if (TypeReadersStore.ContainsKey(packetStructType))
-                return TypeReadersStore.Get(packetStructType);
+            if (TypeReadersStore<BlockExpression>.ContainsKey(packetStructType))
+                return TypeReadersStore<BlockExpression>.Get(packetStructType);
 
             var subStructureExpr = Expression.Variable(packetStructType);
             var bodyExpressions = new List<Expression> {
@@ -172,7 +172,7 @@ namespace SniffExplorer.Packets.Parsing
 
             var block = Expression.Block(new[] {subStructureExpr}, bodyExpressions);
 
-            TypeReadersStore.Store(packetStructType, block);
+            TypeReadersStore<BlockExpression>.Store(packetStructType, block);
             return block;
         }
 
