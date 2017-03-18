@@ -16,9 +16,13 @@ namespace SniffExplorer.Utils
             Left,
         }
 
-        private readonly Status _status;
-        private readonly Left _left;
-        private readonly Right _right;
+        private Status _status;
+        private Left _left;
+        private Right _right;
+
+        public Either()
+        {
+        }
 
         public Either(Right right)
         {
@@ -47,6 +51,11 @@ namespace SniffExplorer.Utils
                     throw new InvalidOperationException();
                 return _right;
             }
+            set
+            {
+                _status = Status.Right;
+                _right = value;
+            }
         }
 
         [Pure]
@@ -57,6 +66,11 @@ namespace SniffExplorer.Utils
                 if (_status == Status.Right)
                     throw new InvalidOperationException();
                 return _left;
+            }
+            set
+            {
+                _status = Status.Left;
+                _left = value;
             }
         }
 

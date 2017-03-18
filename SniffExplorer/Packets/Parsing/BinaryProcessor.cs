@@ -68,16 +68,20 @@ namespace SniffExplorer.Packets.Parsing
                     using (var memoryStream = new MemoryStream(sniffStream.ReadBytes(fullSize), false))
                     using (var packetReader = new PacketReader(memoryStream, fullSize))
                     {
+                        var opcodeEnum = new Either<OpcodeClient, OpcodeServer>();
+
                         Type targetType;
                         switch (direction)
                         {
                             case 0x47534D43u: // CMSG
+                                opcodeEnum.LeftValue = (OpcodeClient) opcode;
                                 if (!_clientOpcodeStructs.ContainsKey((OpcodeClient) opcode))
                                     continue;
                                 targetType = _clientOpcodeStructs[(OpcodeClient) opcode];
                                 OnOpcodeParsed?.Invoke(((OpcodeClient) opcode).ToString());
                                 break;
                             case 0x47534D53u: // SMSG
+                                opcodeEnum.RightValue = (OpcodeServer) opcode;
                                 if (!_serverOpcodeStructs.ContainsKey((OpcodeServer) opcode))
                                     continue;
                                 targetType = _serverOpcodeStructs[(OpcodeServer) opcode];
@@ -87,27 +91,10 @@ namespace SniffExplorer.Packets.Parsing
                                 throw new ArgumentOutOfRangeException();
                         }
 
-                        switch (direction)
-                        {
-                            case 0x47534D43u: // CMSG
-                            {
-                                var opcodeEnum = (OpcodeClient) opcode;
-                                if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
-                                    GeneratePacketReader(targetType);
+                        if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
+                            GeneratePacketReader(targetType);
 
-                                Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
-                                break;
-                            }
-                            case 0x47534D53u: // SMSG
-                            {
-                                var opcodeEnum = (OpcodeServer) opcode;
-                                if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
-                                    GeneratePacketReader(targetType);
-
-                                Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
-                                break;
-                            }
-                        }
+                        Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
 
                         if (memoryStream.Position != memoryStream.Length)
                             Console.WriteLine("Failed to parse a full opcode!");

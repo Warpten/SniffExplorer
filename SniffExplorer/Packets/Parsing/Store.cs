@@ -19,22 +19,10 @@ namespace SniffExplorer.Packets.Parsing
         public static List<Record> Opcodes { get; } =
             new List<Record>();
 
-        public static void Insert(OpcodeClient opcode, ValueType instance, uint connectionId, DateTime timeStamp)
+        public static void Insert(Either<OpcodeClient, OpcodeServer> opcode, ValueType instance, uint connectionId, DateTime timeStamp)
         {
             Opcodes.Add(new Record {
-                Opcode = new Either<OpcodeClient, OpcodeServer>(opcode),
-                Packet = instance,
-
-                ConnectionID = connectionId,
-                TimeStamp = timeStamp
-            });
-        }
-
-        public static void Insert(OpcodeServer opcode, ValueType instance, uint connectionId, DateTime timeStamp)
-        {
-            Opcodes.Add(new Record
-            {
-                Opcode = new Either<OpcodeClient, OpcodeServer>(opcode),
+                Opcode = opcode,
                 Packet = instance,
 
                 ConnectionID = connectionId,
