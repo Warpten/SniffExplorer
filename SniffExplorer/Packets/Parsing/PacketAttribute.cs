@@ -48,7 +48,8 @@ namespace SniffExplorer.Packets.Parsing
     /// <summary>
     /// Use this attribute to have 64-bits field be read using
     /// <see cref="PacketReader.ReadPackedUInt64()"/> instead of
-    /// <see cref="PacketReader.ReadUInt64()"/>
+    /// <see cref="PacketReader.ReadUInt64()"/>. Also used to allow
+    /// reading packed times.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public sealed class PackedFieldAttribute : Attribute
@@ -89,16 +90,16 @@ namespace SniffExplorer.Packets.Parsing
     {
         public int BitSize { get; }
 
-        public BitFieldAttribute(int bitSize)
+        public BitFieldAttribute(int bitSize = 1)
         {
             BitSize = bitSize;
         }
 
-        internal Expression GetCallExpression(Expression argumentExpression)
+        internal Expression GetCallExpression(Expression argumentExpression, Type propertyType)
         {
-            return BitSize == 1 ?
+            return Expression.Convert(BitSize == 1 ?
                 Expression.Call(argumentExpression, ExpressionUtils.Bit) :
-                Expression.Call(argumentExpression, ExpressionUtils.Bits, Expression.Constant(BitSize));
+                Expression.Call(argumentExpression, ExpressionUtils.Bits, Expression.Constant(BitSize)), propertyType);
         }
     }
 

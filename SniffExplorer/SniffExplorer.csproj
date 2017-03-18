@@ -53,6 +53,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enums\Opcode.cs" />
+    <Compile Include="Packets\AccountDataHandler.cs" />
+    <Compile Include="Packets\AchievementHandler.cs" />
     <Compile Include="Packets\AuthPackets.cs" />
     <Compile Include="Packets\CharacterStructs.cs" />
     <Compile Include="Packets\GuildPackets.cs" />
@@ -72,6 +74,7 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\Either.cs" />
+    <Compile Include="Utils\ExpressionUtils.cs" />
     <Compile Include="Utils\MiscExtensions.cs" />
     <Compile Include="Utils\SizeCache.cs" />
     <Compile Include="Utils\StreamExtensions.cs" />

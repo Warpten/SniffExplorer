@@ -20,8 +20,8 @@ namespace SniffExplorer.Utils
         public static readonly MethodInfo Bit = typeof(PacketReader).GetMethod("ReadBit", Type.EmptyTypes);
         public static readonly MethodInfo Bits = typeof(PacketReader).GetMethod("ReadBits", typeof(int));
 
-        public static readonly Func<int, DateTime> ServerEpoch =
-            seconds => new DateTime(2000, 1, 1).AddSeconds(seconds);
+        public static readonly MethodInfo ReadTime = typeof(PacketReader).GetMethod("ReadTime", typeof(int));
+        public static readonly MethodInfo ReadPackedTime = typeof(PacketReader).GetMethod("ReadPackedTime", typeof(int));
 
         public static readonly Dictionary<TypeCode, MethodInfo> Base = new Dictionary<TypeCode, MethodInfo>()
             {

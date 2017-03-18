@@ -181,7 +181,6 @@ namespace SniffExplorer.Packets.Parsing
             var propExpression = Expression.MakeMemberAccess(tExpr, propInfo);
             var relativeArraySizeAttr = propInfo.GetCustomAttribute<StreamedSizeAttribute>();
             var absoluteArraySizeAttr = propInfo.GetCustomAttribute<FixedSizeAttribute>();
-            var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr);
 
             Expression arraySizeExpr = null; // Never null, keep compiler happy
             if (relativeArraySizeAttr != null)
@@ -191,7 +190,7 @@ namespace SniffExplorer.Packets.Parsing
                         $"Property {propInfo.Name} has multiple array size specifications!");
 
                 if (relativeArraySizeAttr.InPlace)
-                    arraySizeExpr = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr) ??
+                    arraySizeExpr = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr, propInfo.PropertyType.GetElementType()) ??
                         Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]);
                 else
                     arraySizeExpr = Expression.MakeMemberAccess(tExpr,
@@ -199,6 +198,7 @@ namespace SniffExplorer.Packets.Parsing
             }
             if (absoluteArraySizeAttr != null)
             {
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (relativeArraySizeAttr != null)
                     throw new InvalidOperationException(
                         $"Property {propInfo.Name} is missing an array size specification!");
@@ -206,13 +206,12 @@ namespace SniffExplorer.Packets.Parsing
                 arraySizeExpr = Expression.Constant(absoluteArraySizeAttr.ArraySize);
             }
 
-            // ReSharper disable once AssignNullToNotNullAttribute
-            var arrayInitExpr = Expression.New(propInfo.PropertyType.GetConstructor(new[] { typeof(int) }), arraySizeExpr);
-
             var exitLabelExpr = Expression.Label();
             var itrExpr = Expression.Variable(typeof(int));
             return Expression.Block(new[] { itrExpr },
-                Expression.Assign(propExpression, arrayInitExpr),
+                // ReSharper disable once AssignNullToNotNullAttribute
+                Expression.Assign(propExpression,
+                    Expression.New(propInfo.PropertyType.GetConstructor(new[] { typeof(int) }), arraySizeExpr)),
                 Expression.Assign(itrExpr, Expression.Constant(0)),
                 Expression.Loop(
                     Expression.IfThenElse(
@@ -232,8 +231,6 @@ namespace SniffExplorer.Packets.Parsing
 
         private static Expression GenerateValueReader(Type packetStructType, PropertyInfo propInfo, ParameterExpression argExpr, Expression tExpr)
         {
-            var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr);
-
             var propType = propInfo.PropertyType;
             if (propType.IsArray)
                 propType = propType.GetElementType();
@@ -241,14 +238,20 @@ namespace SniffExplorer.Packets.Parsing
             if (propType.IsArray)
                 throw new NotImplementedException($"Field {propInfo.Name} is a multi-dimensional array");
 
+
+            var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr, propType);
+
             var packedAttr = propInfo.GetCustomAttribute<PackedFieldAttribute>();
             var typeCode = Type.GetTypeCode(propType);
             switch (typeCode)
             {
+                case TypeCode.Boolean:
+                    if (bitReaderExpression != null)
+                        return Expression.Call(argExpr, ExpressionUtils.Bit);
+                    goto case TypeCode.Int32;
                 case TypeCode.Int32:
                 case TypeCode.UInt32:
                 case TypeCode.Int16:
-                case TypeCode.Boolean:
                 case TypeCode.SByte:
                 case TypeCode.Byte:
                 case TypeCode.UInt16:
@@ -264,7 +267,9 @@ namespace SniffExplorer.Packets.Parsing
                         ExpressionUtils.PackedUInt64 :
                         ExpressionUtils.Base[TypeCode.UInt64]);
                 case TypeCode.DateTime:
-                    return Expression.Call(ExpressionUtils.ServerEpoch.GetMethodInfo(),
+                    return Expression.Call(argExpr, packedAttr != null
+                        ? ExpressionUtils.ReadPackedTime
+                        : ExpressionUtils.ReadTime,
                         Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
                 case TypeCode.String:
                 {

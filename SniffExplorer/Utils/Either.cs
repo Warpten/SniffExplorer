@@ -63,13 +63,20 @@ namespace SniffExplorer.Utils
         [Pure]
         public override int GetHashCode()
         {
-            var hashCode = 0xFFFFFFFF;
+            var hashCode = 0xDEADBEEF;
             if (_left != null)
                 hashCode ^= (uint)_left.GetHashCode();
             if (_right != null)
                 hashCode ^= (uint)_right.GetHashCode();
 
             return (int)hashCode;
+        }
+
+        public override string ToString()
+        {
+            if (_status == Status.Right)
+                return _right.ToString();
+            return _left.ToString();
         }
     }
 }

@@ -137,6 +137,15 @@ namespace SniffExplorer.Packets.Parsing
             return value;
         }
 
+        public DateTime ReadTime(int seconds) => new DateTime(1970, 1, 1).AddSeconds(seconds);
+
+        public DateTime ReadPackedTime(int packedDate) => new DateTime(2000, 1, 1)
+            .AddYears((packedDate >> 24) & 0x1F)
+            .AddMonths((packedDate >> 20) & 0xF)
+            .AddDays((packedDate >> 14) & 0x3F)
+            .AddHours((packedDate >> 6) & 0x1F)
+            .AddMinutes(packedDate & 0x3F);
+
         public new string ReadString()
         {
             var bytes = new List<byte>();
