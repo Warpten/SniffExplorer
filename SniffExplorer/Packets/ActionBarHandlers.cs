@@ -14,7 +14,7 @@ namespace SniffExplorer.Packets
         public uint Type { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_UPDATE_ACTION_BUTTONS)]
+    [Packet(OpcodeServer.SMSG_UPDATE_ACTION_BUTTONS)]
     public struct ClientUpdateActionButtons
     {
         [FixedSize(132)]
@@ -22,7 +22,7 @@ namespace SniffExplorer.Packets
         public byte Reason { get; set; }
     }
 
-    [ClientPacket(OpcodeClient.CMSG_SET_ACTION_BUTTON)]
+    [Packet(OpcodeClient.CMSG_SET_ACTION_BUTTON)]
     public struct UserClientSetActionButton
     {
         private ActionButton Button { get; set; }

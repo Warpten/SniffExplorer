@@ -10,28 +10,18 @@ namespace SniffExplorer.Packets.Parsing
     /// as CMSG parsers.
     /// </summary>
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = true)]
-    public sealed class ClientPacketAttribute : Attribute
+    public sealed class PacketAttribute : Attribute
     {
-        public OpcodeClient Opcode { get; }
+        public Either<OpcodeClient, OpcodeServer> Opcode { get; }
 
-        public ClientPacketAttribute(OpcodeClient clientOpcode)
+        public PacketAttribute(OpcodeClient clientOpcode)
         {
-            Opcode = clientOpcode;
+            Opcode.LeftValue = clientOpcode;
         }
-    }
 
-    /// <summary>
-    /// Use this attribute to decorate structures that act
-    /// as SMSG parsers.
-    /// </summary>
-    [AttributeUsage(AttributeTargets.Struct, AllowMultiple = true)]
-    public sealed class ServerPacketAttribute : Attribute
-    {
-        public OpcodeServer Opcode { get; }
-
-        public ServerPacketAttribute(OpcodeServer clientOpcode)
+        public PacketAttribute(OpcodeServer clientOpcode)
         {
-            Opcode = clientOpcode;
+            Opcode.RightValue = clientOpcode;
         }
     }
 

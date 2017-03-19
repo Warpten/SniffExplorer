@@ -5,7 +5,7 @@ using SniffExplorer.Packets.Types;
 
 namespace SniffExplorer.Packets
 {
-    [ServerPacket(OpcodeServer.SMSG_ACCOUNT_DATA_TIMES)]
+    [Packet(OpcodeServer.SMSG_ACCOUNT_DATA_TIMES)]
     public struct ClientAccountDataTimes
     {
         public ObjectGuid GUID { get; set; }
@@ -14,7 +14,7 @@ namespace SniffExplorer.Packets
         public DateTime[] AccountTimes { get; set; }
     }
 
-    [ClientPacket(OpcodeClient.CMSG_REQUEST_ACCOUNT_DATA)]
+    [Packet(OpcodeClient.CMSG_REQUEST_ACCOUNT_DATA)]
     public struct UserClientRequestAccountData
     {
         public ObjectGuid GUID { get; set; }

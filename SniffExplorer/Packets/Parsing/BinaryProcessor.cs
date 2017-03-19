@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using SniffExplorer.Enums;
 using System.Linq.Expressions;
+using System.Text;
 using SniffExplorer.Packets.Types;
 using SniffExplorer.Utils;
 
@@ -14,26 +15,23 @@ namespace SniffExplorer.Packets.Parsing
         public static uint Build { get; private set; }
         public static string Locale { get; private set; }
 
-        private static Dictionary<OpcodeClient, Type> _clientOpcodeStructs = new Dictionary<OpcodeClient, Type>();
-        private static Dictionary<OpcodeServer, Type> _serverOpcodeStructs = new Dictionary<OpcodeServer, Type>();
+        private static Dictionary<Either<OpcodeClient, OpcodeServer>, Type> _opcodeStructs;
 
         public static event Action<string> OnOpcodeParsed;
         public static event Action OnSniffLoaded;
 
         static BinaryProcessor()
         {
+            _opcodeStructs = new Dictionary<Either<OpcodeClient, OpcodeServer>, Type>();
+
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
             {
                 if (type.IsClass)
                     continue;
 
-                var clientOpcodeAttrs = type.GetCustomAttributes<ClientPacketAttribute>();
-                foreach (var opcodeAttribute in clientOpcodeAttrs)
-                    _clientOpcodeStructs[opcodeAttribute.Opcode] = type;
-
-                var serverOpcodeAttrs = type.GetCustomAttributes<ServerPacketAttribute>();
-                foreach (var opcodeAttribute in serverOpcodeAttrs)
-                    _serverOpcodeStructs[opcodeAttribute.Opcode] = type;
+                var opcodeAttrs = type.GetCustomAttributes<PacketAttribute>();
+                foreach (var opcodeAttribute in opcodeAttrs)
+                    _opcodeStructs[opcodeAttribute.Opcode] = type;
             }
         }
 
@@ -70,26 +68,23 @@ namespace SniffExplorer.Packets.Parsing
                     {
                         var opcodeEnum = new Either<OpcodeClient, OpcodeServer>();
 
-                        Type targetType;
                         switch (direction)
                         {
                             case 0x47534D43u: // CMSG
                                 opcodeEnum.LeftValue = (OpcodeClient) opcode;
-                                if (!_clientOpcodeStructs.ContainsKey((OpcodeClient) opcode))
-                                    continue;
-                                targetType = _clientOpcodeStructs[(OpcodeClient) opcode];
-                                OnOpcodeParsed?.Invoke(((OpcodeClient) opcode).ToString());
                                 break;
                             case 0x47534D53u: // SMSG
                                 opcodeEnum.RightValue = (OpcodeServer) opcode;
-                                if (!_serverOpcodeStructs.ContainsKey((OpcodeServer) opcode))
-                                    continue;
-                                targetType = _serverOpcodeStructs[(OpcodeServer) opcode];
-                                OnOpcodeParsed?.Invoke(((OpcodeServer) opcode).ToString());
                                 break;
                             default:
                                 throw new ArgumentOutOfRangeException();
                         }
+
+                        if (!_opcodeStructs.ContainsKey(opcodeEnum))
+                            continue;
+
+                        var targetType = _opcodeStructs[opcodeEnum];
+                        OnOpcodeParsed?.Invoke(opcodeEnum.ToString());
 
                         if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
                             GeneratePacketReader(targetType);
@@ -97,7 +92,38 @@ namespace SniffExplorer.Packets.Parsing
                         Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
 
                         if (memoryStream.Position != memoryStream.Length)
-                            Console.WriteLine("Failed to parse a full opcode!");
+                        {
+                            Console.WriteLine(@"|-------------------------------------------------|---------------------------------|");
+                            Console.WriteLine(@"| 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | 0 1 2 3 4 5 6 7 8 9 A B C D E F |");
+                            Console.WriteLine(@"|-------------------------------------------------|---------------------------------|");
+
+                            for (var i = memoryStream.Position; i < memoryStream.Length; i += 16)
+                            {
+                                var hexBuffer = new StringBuilder();
+                                var asciiBuffer = new StringBuilder();
+                                for (var j = 0; j < 16; ++j)
+                                {
+                                    if (i + j < memoryStream.Length)
+                                    {
+                                        var value = packetReader.ReadByte();
+                                        hexBuffer.Append($"{value:X2} ");
+                                        if (value >= 32 && value <= 127)
+                                            asciiBuffer.Append($"{(char) value} ");
+                                        else
+                                            asciiBuffer.Append(". ");
+                                    }
+                                    else
+                                    {
+                                        hexBuffer.Append("   ");
+                                        asciiBuffer.Append("  ");
+                                    }
+                                }
+
+                                Console.WriteLine($"| {hexBuffer}| {asciiBuffer} |");
+                            }
+
+                            Console.WriteLine(@"|-------------------------------------------------|---------------------------------|");
+                        }
                     }
                 }
 

@@ -11,20 +11,20 @@ namespace SniffExplorer.Packets
         public int CompletionCount { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_SETUP_RESEARCH_HISTORY)]
+    [Packet(OpcodeServer.SMSG_SETUP_RESEARCH_HISTORY)]
     public struct ClientSetupResearchHistory
     {
         [StreamedSize]
         public ResearchHistory[] History { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_RESEARCH_COMPLETE)]
+    [Packet(OpcodeServer.SMSG_RESEARCH_COMPLETE)]
     public struct ClientResearchComplete
     {
         public ResearchHistory Research { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_ARCHAEOLOGY_SURVERY_CAST)]
+    [Packet(OpcodeServer.SMSG_ARCHAEOLOGY_SURVERY_CAST)]
     public struct ClientArchaeologySurveryCast
     {
         public uint NumFindsCompleted { get; set; }

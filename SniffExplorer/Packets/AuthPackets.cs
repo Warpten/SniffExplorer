@@ -4,7 +4,7 @@ using SniffExplorer.Packets.Parsing;
 
 namespace SniffExplorer.Packets
 {
-    [ClientPacket(OpcodeClient.CMSG_AUTH_SESSION)]
+    [Packet(OpcodeClient.CMSG_AUTH_SESSION)]
     public struct UserClientAuthSession
     {
         public ulong DosResponse { get; set; }

@@ -28,7 +28,7 @@ namespace SniffExplorer.Packets
         public int NativeRealmAddress { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_CRITERIA_UPDATE)]
+    [Packet(OpcodeServer.SMSG_CRITERIA_UPDATE)]
     public struct ClientCriteriaUpdate
     {
         public uint ID { get; set; }
@@ -41,20 +41,20 @@ namespace SniffExplorer.Packets
         public DateTime TimeFromCreate { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_ACCOUNT_CRITERIA_UPDATE)]
+    [Packet(OpcodeServer.SMSG_ACCOUNT_CRITERIA_UPDATE)]
     public struct ClientAccountCriteriaUpdate
     {
         public CriteriaProgress Progress { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_ALL_ACCOUNT_CRITERIA)]
+    [Packet(OpcodeServer.SMSG_ALL_ACCOUNT_CRITERIA)]
     public struct ClientAllAccountCriteria
     {
         [StreamedSize]
         public CriteriaProgress[] Progress { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_ACHIEVEMENT_EARNED)]
+    [Packet(OpcodeServer.SMSG_ACHIEVEMENT_EARNED)]
     public struct ClientAchievementEarned
     {
         public ObjectGuid Sender { get; set; }
@@ -79,7 +79,7 @@ namespace SniffExplorer.Packets
         public CriteriaProgress[] Progress { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_RESPOND_INSPECT_ACHIEVEMENTS)]
+    [Packet(OpcodeServer.SMSG_RESPOND_INSPECT_ACHIEVEMENTS)]
     public struct ClientRespondInspectAchievements
     {
         public ObjectGuid Player { get; set; }

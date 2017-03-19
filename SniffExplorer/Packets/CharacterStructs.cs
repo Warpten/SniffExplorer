@@ -13,7 +13,7 @@ namespace SniffExplorer.Packets
         public byte PowerType { get; set; }
     }
 
-    [ServerPacket(OpcodeServer.SMSG_POWER_UPDATE)]
+    [Packet(OpcodeServer.SMSG_POWER_UPDATE)]
     public struct UserClientPowerUpdate
     {
         public ObjectGuid GUID { get; set; }

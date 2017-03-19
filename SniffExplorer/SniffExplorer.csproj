@@ -55,6 +55,8 @@
     <Compile Include="Enums\Opcode.cs" />
     <Compile Include="Packets\AccountDataHandler.cs" />
     <Compile Include="Packets\AchievementHandler.cs" />
+    <Compile Include="Packets\ActionBarHandlers.cs" />
+    <Compile Include="Packets\ArchaeologyHandler.cs" />
     <Compile Include="Packets\AuthPackets.cs" />
     <Compile Include="Packets\CharacterStructs.cs" />
     <Compile Include="Packets\GuildPackets.cs" />
