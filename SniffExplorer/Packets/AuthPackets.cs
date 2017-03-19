@@ -1,5 +1,4 @@
-﻿using System;
-using SniffExplorer.Enums;
+﻿using SniffExplorer.Enums;
 using SniffExplorer.Packets.Parsing;
 
 namespace SniffExplorer.Packets

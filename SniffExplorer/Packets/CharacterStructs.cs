@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using SniffExplorer.Enums;
 using SniffExplorer.Packets.Parsing;
 using SniffExplorer.Packets.Types;
