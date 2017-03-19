@@ -24,6 +24,14 @@ namespace SniffExplorer.Utils
         {
         }
 
+        public override bool Equals(object obj)
+        {
+            var eObj = obj as Either<Left, Right>;
+            if (eObj != null)
+                return Equals(eObj);
+            return false;
+        }
+
         public bool Equals(Either<Left, Right> other)
         {
             if (other.Side != Side)
@@ -111,13 +119,15 @@ namespace SniffExplorer.Utils
 
         public override int GetHashCode()
         {
-            var hashCode = 0xDEADBEEF;
-            if (_left != null)
-                hashCode ^= (uint)_left.GetHashCode();
-            if (_right != null)
-                hashCode ^= (uint)_right.GetHashCode();
+            switch (Side)
+            {
+                case Status.Right:
+                    return _right.GetHashCode();
+                case Status.Left:
+                    return _left.GetHashCode();
+            }
 
-            return (int)hashCode;
+            return 0xDEADBEE;
         }
 
         public override string ToString()
@@ -125,6 +135,19 @@ namespace SniffExplorer.Utils
             if (Side == Status.Right)
                 return _right.ToString();
             return _left.ToString();
+        }
+
+        public class EqualityComparer : IEqualityComparer<Either<Left, Right>>
+        {
+            public bool Equals(Either<Left, Right> x, Either<Left, Right> y)
+            {
+                return x == y;
+            }
+
+            public int GetHashCode(Either<Left, Right> obj)
+            {
+                return obj.GetHashCode();
+            }
         }
     }
 }

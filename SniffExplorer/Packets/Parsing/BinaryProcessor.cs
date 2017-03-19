@@ -22,7 +22,7 @@ namespace SniffExplorer.Packets.Parsing
 
         static BinaryProcessor()
         {
-            _opcodeStructs = new Dictionary<Either<OpcodeClient, OpcodeServer>, Type>();
+            _opcodeStructs = new Dictionary<Either<OpcodeClient, OpcodeServer>, Type>(new Either<OpcodeClient, OpcodeServer>.EqualityComparer());
 
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes())
             {
@@ -47,7 +47,7 @@ namespace SniffExplorer.Packets.Parsing
             {
                 sniffStream.BaseStream.Position += 3 + 2 + 1;
                 Build = sniffStream.ReadUInt32();
-                Locale = System.Text.Encoding.UTF8.GetString(sniffStream.ReadBytes(4));
+                Locale = Encoding.UTF8.GetString(sniffStream.ReadBytes(4));
                 sniffStream.BaseStream.Position += 40 + 4 + 4;
                 var optDataLength = sniffStream.ReadInt32();
                 sniffStream.BaseStream.Position += optDataLength;
@@ -80,11 +80,11 @@ namespace SniffExplorer.Packets.Parsing
                                 throw new ArgumentOutOfRangeException();
                         }
 
-                        if (!_opcodeStructs.ContainsKey(opcodeEnum))
-                            continue;
-
-                        var targetType = _opcodeStructs[opcodeEnum];
                         OnOpcodeParsed?.Invoke(opcodeEnum.ToString());
+
+                        Type targetType;
+                        if (!_opcodeStructs.TryGetValue(opcodeEnum, out targetType))
+                            continue;
 
                         if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
                             GeneratePacketReader(targetType);

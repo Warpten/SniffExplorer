@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -13,10 +14,16 @@ namespace SniffExplorer.Test
         [TestMethod]
         public void TestFile()
         {
+            Stopwatch sw;
             using (var fs = File.OpenRead(@"C:\Users\verto\Desktop\Reversing\Sniffs\22996_2016-11-30_09-40-46.pkt"))
+            {
+                sw = new Stopwatch();
+                sw.Start();
                 BinaryProcessor.Process(fs);
+                sw.Stop();
+            }
 
-            Console.WriteLine("{0} opcodes parsed.", PacketStore.Count);
+            Console.WriteLine("{0} opcodes parsed in {1}.", PacketStore.Count, sw.Elapsed.ToString());
         }
 
         [TestMethod]
