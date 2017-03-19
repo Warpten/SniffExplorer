@@ -23,7 +23,7 @@ namespace SniffExplorer.UI.Forms
                 toolStripStatusLabel1.Text = $@"Parsed {opcode} ...";
             });
             BinaryProcessor.OnSniffLoaded += () => this.InvokeIfRequired(() => {
-                var l = Store.Opcodes.Count;
+                var l = PacketStore.Opcodes.Count;
             });
         }
 

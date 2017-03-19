@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using SniffExplorer.Enums;
 using SniffExplorer.Utils;
 
 namespace SniffExplorer.Packets.Parsing
 {
-    public static class Store
+    public static class PacketStore
     {
         public class Record
         {
@@ -16,7 +17,7 @@ namespace SniffExplorer.Packets.Parsing
             public uint ConnectionID { get; set; }
         }
 
-        public static List<Record> Opcodes { get; } =
+        private static List<Record> Opcodes { get; } =
             new List<Record>();
 
         public static void Insert(Either<OpcodeClient, OpcodeServer> opcode, ValueType instance, uint connectionId, DateTime timeStamp)
@@ -29,5 +30,13 @@ namespace SniffExplorer.Packets.Parsing
                 TimeStamp = timeStamp
             });
         }
+
+        public static IEnumerable<Record> GetPackets(Either<OpcodeClient, OpcodeServer> key) =>
+            Opcodes.Where(r => r.Opcode == key);
+
+        public static IEnumerator<Record> GetIterator() =>
+            Opcodes.GetEnumerator();
+
+        public static int Count => Opcodes.Count;
     }
 }

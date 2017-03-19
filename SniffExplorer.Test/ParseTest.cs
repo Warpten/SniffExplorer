@@ -11,6 +11,15 @@ namespace SniffExplorer.Test
     public class ParseTest
     {
         [TestMethod]
+        public void TestFile()
+        {
+            using (var fs = File.OpenRead(@"C:\Users\verto\Desktop\Reversing\Sniffs\22996_2016-11-30_09-40-46.pkt"))
+                BinaryProcessor.Process(fs);
+
+            Console.WriteLine("{0} opcodes parsed.", PacketStore.Count);
+        }
+
+        [TestMethod]
         public void TestMethod1()
         {
             using (var ms = new MemoryStream())
@@ -68,7 +77,7 @@ namespace SniffExplorer.Test
                 #endregion
                 BinaryProcessor.Process(ms);
 
-                Console.WriteLine("{0}", Store.Opcodes.Count);
+                Console.WriteLine("{0}", PacketStore.Count);
             }
 
         }

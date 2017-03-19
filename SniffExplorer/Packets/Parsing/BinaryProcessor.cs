@@ -89,7 +89,7 @@ namespace SniffExplorer.Packets.Parsing
                         if (!TypeReadersStore<Func<PacketReader, ValueType>>.ContainsKey(targetType))
                             GeneratePacketReader(targetType);
 
-                        Store.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
+                        PacketStore.Insert(opcodeEnum, TypeReadersStore<Func<PacketReader, ValueType>>.Get(targetType)(packetReader), connectionID, timeStamp);
 
                         if (memoryStream.Position != memoryStream.Length)
                         {

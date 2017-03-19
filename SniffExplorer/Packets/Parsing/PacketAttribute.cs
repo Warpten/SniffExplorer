@@ -12,7 +12,7 @@ namespace SniffExplorer.Packets.Parsing
     [AttributeUsage(AttributeTargets.Struct, AllowMultiple = true)]
     public sealed class PacketAttribute : Attribute
     {
-        public Either<OpcodeClient, OpcodeServer> Opcode { get; }
+        public Either<OpcodeClient, OpcodeServer> Opcode { get; } = new Either<OpcodeClient, OpcodeServer>();
 
         public PacketAttribute(OpcodeClient clientOpcode)
         {
