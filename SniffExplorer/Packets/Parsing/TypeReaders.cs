@@ -13,9 +13,9 @@ namespace SniffExplorer.Packets.Parsing
             _values[key] = value;
         }
 
-        public static T Get(Type key)
+        public static bool TryGetValue(Type key, out T value)
         {
-            return _values[key];
+            return _values.TryGetValue(key, out value);
         }
 
         public static bool ContainsKey(Type key) => _values.ContainsKey(key);
