@@ -38,6 +38,7 @@ namespace SniffExplorer.Core.Packets.Parsing.Attributes
         public SizeAttribute()
         {
             InPlace = true;
+            Streamed = true;
         }
     }
 }
