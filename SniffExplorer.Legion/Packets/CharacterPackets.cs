@@ -11,7 +11,7 @@ namespace SniffExplorer.Legion.Packets
     public struct PowerUpdateBlock
     {
         public uint Power { get; set; }
-        public byte PowerType { get; set; }
+        public PowerType PowerType { get; set; }
 
         public override string ToString() => $"Power type: {PowerType} Amount: {Power}";
     }

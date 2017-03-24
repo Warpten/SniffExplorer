@@ -143,7 +143,7 @@ namespace SniffExplorer.Core.Packets.Parsing
                         if (!_typeLoaders.TryGetValue(targetType, out reader))
                             return; //! TODO: Assert here
 
-                        OnPacketParsed?.Invoke(opcodeName.ToString(), reader(packetReader), packet.ConnectionID,
+                        OnPacketParsed?.Invoke(string.Intern(opcodeName.ToString()), reader(packetReader), packet.ConnectionID,
                             packet.TimeStamp);
 
                         if (memoryStream.Position == memoryStream.Length)

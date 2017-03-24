@@ -162,7 +162,9 @@ namespace SniffExplorer.Core.Packets.Parsing
             var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr, propType);
 
             var packedAttr = propInfo.GetCustomAttribute<PackedFieldAttribute>();
-            var typeCode = Type.GetTypeCode(propType);
+            var typeCode = Type.GetTypeCode(propType.IsEnum ? Enum.GetUnderlyingType(propType) : propType);
+
+            Expression readerExpression = null;
             switch (typeCode)
             {
                 case TypeCode.Boolean:
@@ -174,43 +176,51 @@ namespace SniffExplorer.Core.Packets.Parsing
                 case TypeCode.UInt16:
                 case TypeCode.Int64:
                     if (bitReaderExpression != null)
-                        return bitReaderExpression;
+                        readerExpression = bitReaderExpression;
                     goto case TypeCode.Single;
                 case TypeCode.Single:
                 case TypeCode.Double:
-                    return Expression.Call(argExpr, ExpressionUtils.Base[typeCode]);
+                    readerExpression = Expression.Call(argExpr, ExpressionUtils.Base[typeCode]);
+                    break;
                 case TypeCode.UInt64:
-                    return Expression.Call(argExpr, packedAttr != null ?
+                    readerExpression = Expression.Call(argExpr, packedAttr != null ?
                         ExpressionUtils.PackedUInt64 :
                         ExpressionUtils.Base[TypeCode.UInt64]);
+                    break;
                 case TypeCode.DateTime:
-                    return Expression.Call(argExpr, packedAttr != null
+                    readerExpression = Expression.Call(argExpr, packedAttr != null
                         ? ExpressionUtils.ReadPackedTime
                         : ExpressionUtils.ReadTime);
+                    break;
                 case TypeCode.String:
                 {
                     var stringAttr = propInfo.GetCustomAttribute<SizeAttribute>();
                     if (stringAttr != null)
                     {
                         if (!stringAttr.Streamed)
-                            return Expression.Call(argExpr, ExpressionUtils.String,
+                            readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
                                 Expression.Constant(stringAttr.ArraySize));
-
-                        if (!stringAttr.InPlace)
-                            return Expression.Call(argExpr, ExpressionUtils.String,
+                        else if (!stringAttr.InPlace)
+                            readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
                                 Expression.MakeMemberAccess(tExpr, tExpr.Type.GetProperty(stringAttr.PropertyName)));
-
-                        return Expression.Call(argExpr, ExpressionUtils.String,
-                            bitReaderExpression ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
+                        else
+                            readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
+                                bitReaderExpression ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
                     }
-                    return Expression.Call(argExpr, ExpressionUtils.CString);
+                    else
+                        readerExpression = Expression.Call(argExpr, ExpressionUtils.CString);
+                    break;
                 }
             }
 
-            if (propInfo.PropertyType.IsAssignableFrom(typeof(ObjectGuid)))
-                return Expression.Call(argExpr, ExpressionUtils.ObjectGuid);
+            if (propType.IsEnum && readerExpression != null)
+                readerExpression = Expression.Convert(readerExpression, propType);
 
-            return null;
+
+            if (propType.IsAssignableFrom(typeof(ObjectGuid)))
+                readerExpression = Expression.Call(argExpr, ExpressionUtils.ObjectGuid);
+
+            return readerExpression;
         }
 
         private static Expression GenerateFlatReader(PropertyInfo propInfo, ParameterExpression argExpr, Expression tExpr)

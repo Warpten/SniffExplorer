@@ -56,6 +56,7 @@
     <Compile Include="Packets\Types\HighGuid.cs" />
     <Compile Include="Packets\Types\MetaAttribute.cs" />
     <Compile Include="Packets\Types\ObjectGuid.cs" />
+    <Compile Include="Packets\Types\SharedDefines.cs" />
     <Compile Include="Packets\Types\Vector3.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TargetBuildAttribute.cs" />
