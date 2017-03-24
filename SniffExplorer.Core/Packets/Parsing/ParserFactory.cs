@@ -177,7 +177,9 @@ namespace SniffExplorer.Core.Packets.Parsing
                 case TypeCode.Int64:
                     if (bitReaderExpression != null)
                         readerExpression = bitReaderExpression;
-                    goto case TypeCode.Single;
+                    else
+                        goto case TypeCode.Single;
+                    break;
                 case TypeCode.Single:
                 case TypeCode.Double:
                     readerExpression = Expression.Call(argExpr, ExpressionUtils.Base[typeCode]);
@@ -215,7 +217,6 @@ namespace SniffExplorer.Core.Packets.Parsing
 
             if (propType.IsEnum && readerExpression != null)
                 readerExpression = Expression.Convert(readerExpression, propType);
-
 
             if (propType.IsAssignableFrom(typeof(ObjectGuid)))
                 readerExpression = Expression.Call(argExpr, ExpressionUtils.ObjectGuid);
