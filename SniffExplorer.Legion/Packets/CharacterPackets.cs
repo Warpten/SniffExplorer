@@ -168,7 +168,7 @@ namespace SniffExplorer.Legion.Packets
         [BitField(5)]
         public int UnkWod61x { get; set; }
 
-        [Size("NameLength")]
+        [StringSize("NameLength")]
         public string Name { get; set; }
 
         public override string ToString() => $"{Name} (Level {ExperienceLevel})";

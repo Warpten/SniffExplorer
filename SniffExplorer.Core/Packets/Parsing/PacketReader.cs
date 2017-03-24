@@ -101,6 +101,13 @@ namespace SniffExplorer.Core.Packets.Parsing
             return base.ReadDouble();
         }
 
+        public new char ReadChar()
+        {
+            ResetBitReader();
+            CheckValid(1);
+            return (char) base.ReadByte();
+        }
+
         public void ResetBitReader()
         {
             _bitpos = 8;
