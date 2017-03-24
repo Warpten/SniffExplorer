@@ -166,9 +166,6 @@ namespace SniffExplorer.Core.Packets.Parsing
             switch (typeCode)
             {
                 case TypeCode.Boolean:
-                    if (bitReaderExpression != null)
-                        return Expression.Call(argExpr, ExpressionUtils.Bit);
-                    goto case TypeCode.Int32;
                 case TypeCode.Int32:
                 case TypeCode.UInt32:
                 case TypeCode.Int16:
