@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SniffExplorer.Enums;
-using SniffExplorer.Packets.Parsing;
+using SniffExplorer.Core.Enums;
+using SniffExplorer.Core.Packets.Parsing;
 
 namespace SniffExplorer.Test
 {
@@ -14,16 +14,15 @@ namespace SniffExplorer.Test
         [TestMethod]
         public void TestFile()
         {
-            Stopwatch sw;
             using (var fs = File.OpenRead(@"C:\Users\verto\Desktop\Reversing\Sniffs\22996_2016-11-30_09-40-46.pkt"))
             {
-                sw = new Stopwatch();
+                var sw = new Stopwatch();
                 sw.Start();
                 BinaryProcessor.Process(fs);
                 sw.Stop();
-            }
 
-            Console.WriteLine("{0} opcodes parsed in {1}.", PacketStore.Count, sw.Elapsed.ToString());
+                Console.WriteLine("Parsed in {0}.", sw.Elapsed);
+            }
         }
 
         [TestMethod]
@@ -84,7 +83,7 @@ namespace SniffExplorer.Test
                 #endregion
                 BinaryProcessor.Process(ms);
 
-                Console.WriteLine("{0}", PacketStore.Count);
+                // Console.WriteLine("{0}", PacketStore.Count);
             }
 
         }

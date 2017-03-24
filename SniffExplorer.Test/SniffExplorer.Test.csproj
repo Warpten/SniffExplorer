@@ -54,6 +54,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SniffExplorer.Core\SniffExplorer.Core.csproj">
+      <Project>{027EEC10-2E13-4035-BE30-1D4E13B87D64}</Project>
+      <Name>SniffExplorer.Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SniffExplorer\SniffExplorer.csproj">
       <Project>{DD5BE4F5-2F27-4F88-AA31-8B96841C5CFD}</Project>
       <Name>SniffExplorer</Name>
