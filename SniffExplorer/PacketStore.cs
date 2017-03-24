@@ -33,15 +33,17 @@ namespace SniffExplorer
 
         public static void Insert(string opcode, ValueType instance, uint connectionId, DateTime timeStamp)
         {
+            var copy = string.Intern(opcode);
+
             lock (Opcodes)
             {
                 List<Record> container;
-                if (!Opcodes.TryGetValue(opcode, out container))
-                    container = Opcodes[opcode] = new List<Record>();
+                if (!Opcodes.TryGetValue(copy, out container))
+                    container = Opcodes[copy] = new List<Record>();
 
                 container.Add(new Record
                 {
-                    Opcode = opcode,
+                    Opcode = copy,
                     Packet = instance,
 
                     ConnectionID = connectionId,
