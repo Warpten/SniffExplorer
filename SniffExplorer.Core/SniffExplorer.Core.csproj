@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="EnumProvider.cs" />
     <Compile Include="OpcodeAttribute.cs" />
+    <Compile Include="Packets\Parsing\Attributes\StringSizeAttribute.cs" />
     <Compile Include="Packets\Parsing\BinaryProcessor.cs" />
     <Compile Include="Packets\Parsing\Attributes\BitFieldAttribute.cs" />
     <Compile Include="Packets\Parsing\Attributes\ConditionalAttribute.cs" />

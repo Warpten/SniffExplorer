@@ -8,11 +8,16 @@ namespace SniffExplorer
     {
         public class Record
         {
-            public string Opcode { get; set; }
+            public string Opcode { get; }
             public ValueType Packet { get; set; }
 
             public DateTime TimeStamp { get; set; }
             public uint ConnectionID { get; set; }
+
+            public Record(string opcode)
+            {
+                Opcode = string.Intern(opcode);
+            }
 
             public override string ToString()
             {
@@ -41,9 +46,8 @@ namespace SniffExplorer
                 if (!Opcodes.TryGetValue(copy, out container))
                     container = Opcodes[copy] = new List<Record>();
 
-                container.Add(new Record
+                container.Add(new Record(copy)
                 {
-                    Opcode = copy,
                     Packet = instance,
 
                     ConnectionID = connectionId,

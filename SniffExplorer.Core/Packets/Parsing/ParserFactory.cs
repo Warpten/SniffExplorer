@@ -196,7 +196,7 @@ namespace SniffExplorer.Core.Packets.Parsing
                     break;
                 case TypeCode.String:
                 {
-                    var stringAttr = propInfo.GetCustomAttribute<SizeAttribute>();
+                    var stringAttr = propInfo.GetCustomAttribute<StringSizeAttribute>();
                     if (stringAttr != null)
                     {
                         if (!stringAttr.Streamed)

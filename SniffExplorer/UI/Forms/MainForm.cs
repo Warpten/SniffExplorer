@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -40,6 +41,7 @@ namespace SniffExplorer.UI.Forms
             _filterTextBox.TextChanged += (o, _) => opcodeFilter.FilterValue = _filterTextBox.Text;
         }
 
+        private int _parsedCount = 0;
         private void LoadSniff(object sender, EventArgs e)
         {
             var fileDialog = new OpenFileDialog {Filter = @"PKT files|*.pkt"};
@@ -50,7 +52,10 @@ namespace SniffExplorer.UI.Forms
             Processor.OnPacketParsed += PacketStore.Insert;
             Task.Factory.StartNew(() =>
             {
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
                 Processor.Process(fileDialog.FileName);
+                stopwatch.Stop();
                 Invoke((MethodInvoker)(() =>
                 {
                     _filterTextBox.AutoCompleteCustomSource.Clear();
@@ -61,6 +66,10 @@ namespace SniffExplorer.UI.Forms
                     _opcodeListView.Objects = PacketStore.GetAvailablePackets();
 
                     _filterTextBox.Enabled = true;
+
+                    _sniffLoadProgressBar.Visible = false;
+
+                    toolStripStatusLabel1.Text = $"{Processor.Count} packets parsed in {stopwatch.Elapsed}";
                 }));
             });
         }

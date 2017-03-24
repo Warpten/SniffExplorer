@@ -30,6 +30,7 @@
         {
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.loadSniffToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.filterToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this._opcodeListView = new BrightIdeasSoftware.FastObjectListView();
             this.olvColumn1 = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
@@ -41,7 +42,7 @@
             this._detailedPacketView = new System.Windows.Forms.PropertyGrid();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabel1 = new System.Windows.Forms.ToolStripStatusLabel();
-            this.filterToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this._sniffLoadProgressBar = new System.Windows.Forms.ToolStripProgressBar();
             this.menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -73,6 +74,12 @@
             this.loadSniffToolStripMenuItem.Size = new System.Drawing.Size(71, 20);
             this.loadSniffToolStripMenuItem.Text = "Load sniff";
             this.loadSniffToolStripMenuItem.Click += new System.EventHandler(this.LoadSniff);
+            // 
+            // filterToolStripMenuItem
+            // 
+            this.filterToolStripMenuItem.Name = "filterToolStripMenuItem";
+            this.filterToolStripMenuItem.Size = new System.Drawing.Size(45, 20);
+            this.filterToolStripMenuItem.Text = "Filter";
             // 
             // splitContainer1
             // 
@@ -206,7 +213,8 @@
             // statusStrip1
             // 
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.toolStripStatusLabel1});
+            this.toolStripStatusLabel1,
+            this._sniffLoadProgressBar});
             this.statusStrip1.Location = new System.Drawing.Point(0, 402);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(968, 22);
@@ -218,11 +226,12 @@
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
             this.toolStripStatusLabel1.Size = new System.Drawing.Size(0, 17);
             // 
-            // filterToolStripMenuItem
+            // _sniffLoadProgressBar
             // 
-            this.filterToolStripMenuItem.Name = "filterToolStripMenuItem";
-            this.filterToolStripMenuItem.Size = new System.Drawing.Size(45, 20);
-            this.filterToolStripMenuItem.Text = "Filter";
+            this._sniffLoadProgressBar.Name = "_sniffLoadProgressBar";
+            this._sniffLoadProgressBar.Size = new System.Drawing.Size(100, 16);
+            this._sniffLoadProgressBar.Step = 1;
+            this._sniffLoadProgressBar.Style = System.Windows.Forms.ProgressBarStyle.Marquee;
             // 
             // MainForm
             // 
@@ -271,6 +280,7 @@
         private BrightIdeasSoftware.OLVColumn olvColumn2;
         private BrightIdeasSoftware.OLVColumn olvColumn3;
         private System.Windows.Forms.ToolStripMenuItem filterToolStripMenuItem;
+        private System.Windows.Forms.ToolStripProgressBar _sniffLoadProgressBar;
     }
 }
 

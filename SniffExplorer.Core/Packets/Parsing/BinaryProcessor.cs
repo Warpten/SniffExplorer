@@ -13,6 +13,7 @@ namespace SniffExplorer.Core.Packets.Parsing
     {
         public uint Build { get; private set; }
         public string Locale { get; private set; }
+        public int Count { get; private set; }
 
         private Dictionary<Type, Func<PacketReader, ValueType>> _typeLoaders = new Dictionary<Type, Func<PacketReader, ValueType>>();
         private Dictionary<object, Type> _opcodeStructs = new Dictionary<object, Type>();
@@ -127,7 +128,9 @@ namespace SniffExplorer.Core.Packets.Parsing
                     });
                 }
 
-                Console.WriteLine("Parsing {0} packets...", packetList.Count);
+                Count = packetList.Count;
+
+                OnSniffPrepared?.Invoke();
 
                 Parallel.ForEach(packetList, packet =>
                 {
@@ -146,54 +149,21 @@ namespace SniffExplorer.Core.Packets.Parsing
                         OnPacketParsed?.Invoke(string.Intern(opcodeName.ToString()), reader(packetReader), packet.ConnectionID,
                             packet.TimeStamp);
 
+                        packet.Data = null;
+
                         if (memoryStream.Position == memoryStream.Length)
                             return;
 
                         Console.WriteLine("Incomplete parsing of {0} ({1} bytes read, {2} remaining)", opcodeName,
                             memoryStream.Position, memoryStream.Length - memoryStream.Position);
-
-                        //! TODO: Move to sub-dlls
-#if DEBUG
-                        Console.WriteLine(
-                            @"|-------------------------------------------------|---------------------------------|");
-                        Console.WriteLine(
-                            @"| 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F | 0 1 2 3 4 5 6 7 8 9 A B C D E F |");
-                        Console.WriteLine(
-                            @"|-------------------------------------------------|---------------------------------|");
-
-                        for (var i = memoryStream.Position; i < memoryStream.Length; i += 16)
-                        {
-                            var hexBuffer = new StringBuilder();
-                            var asciiBuffer = new StringBuilder();
-                            for (var j = 0; j < 16; ++j)
-                            {
-                                if (i + j < memoryStream.Length)
-                                {
-                                    var value = packetReader.ReadByte();
-                                    hexBuffer.Append($"{value:X2} ");
-                                    if (value >= 32 && value <= 127)
-                                        asciiBuffer.Append($"{(char) value} ");
-                                    else
-                                        asciiBuffer.Append(". ");
-                                }
-                                else
-                                {
-                                    hexBuffer.Append("   ");
-                                    asciiBuffer.Append("  ");
-                                }
-                            }
-
-                            Console.WriteLine($"| {hexBuffer}| {asciiBuffer} |");
-                        }
-
-                        Console.WriteLine(
-                            @"|-------------------------------------------------|---------------------------------|");
-#endif // DEBUG
                     }
                 });
+
+                GC.Collect();
             }
         }
 
+        public event Action OnSniffPrepared;
         public event Action<string, ValueType, uint, DateTime> OnPacketParsed;
 
         public struct Packet
