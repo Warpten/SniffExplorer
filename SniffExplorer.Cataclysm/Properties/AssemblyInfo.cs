@@ -1,20 +1,20 @@
-﻿using System.Reflection;
+﻿using SniffExplorer.Core;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using SniffExplorer.Core;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("SniffExplorer.Legion")]
+[assembly: AssemblyTitle("SniffExplorer.Cataclysm")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("SniffExplorer.Legion")]
-[assembly: AssemblyCopyright("Copyright ©  2017")]
+[assembly: AssemblyProduct("SniffExplorer.Cataclysm")]
+[assembly: AssemblyCopyright("Copyright ©  2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
-[assembly: TargetBuild(22996)]
+[assembly: TargetBuild(15595)]
 
 // Setting ComVisible to false makes the types in this assembly not visible
 // to COM components.  If you need to access a type in this assembly from
@@ -22,7 +22,7 @@ using SniffExplorer.Core;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("60957d15-1251-4689-89aa-de63242d8516")]
+[assembly: Guid("8576921d-1a26-40dd-a603-069e05e35526")]
 
 // Version information for an assembly consists of the following four values:
 //

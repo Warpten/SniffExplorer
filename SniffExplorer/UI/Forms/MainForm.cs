@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using SniffExplorer.Core;
+using SniffExplorer.Core.Packets;
 using SniffExplorer.Core.Packets.Parsing;
 
 namespace SniffExplorer.UI.Forms
@@ -41,7 +42,6 @@ namespace SniffExplorer.UI.Forms
             _filterTextBox.TextChanged += (o, _) => opcodeFilter.FilterValue = _filterTextBox.Text;
         }
 
-        private int _parsedCount = 0;
         private void LoadSniff(object sender, EventArgs e)
         {
             var fileDialog = new OpenFileDialog {Filter = @"PKT files|*.pkt"};
@@ -59,8 +59,7 @@ namespace SniffExplorer.UI.Forms
                 Invoke((MethodInvoker)(() =>
                 {
                     _filterTextBox.AutoCompleteCustomSource.Clear();
-                    _filterTextBox.AutoCompleteCustomSource.AddRange(
-                        EnumProvider.GetOpcodes(Processor.Assembly, Processor.Build).ToArray());
+                    _filterTextBox.AutoCompleteCustomSource.AddRange(Enum.GetNames(typeof(Opcodes)));
 
                     _opcodeListView.Enabled = true;
                     _opcodeListView.Objects = PacketStore.GetAvailablePackets();

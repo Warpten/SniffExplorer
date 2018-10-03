@@ -19,7 +19,7 @@ namespace SniffExplorer.Legion.Packets
     [Packet(typeof(V22996.OpcodeServer), "SMSG_POWER_UPDATE"), TargetBuild(22996)]
     public struct UserClientPowerUpdate
     {
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
 
         [Size]
         public PowerUpdateBlock[] Updates { get; set; }
@@ -31,10 +31,10 @@ namespace SniffExplorer.Legion.Packets
         public int Level { get; set; }
         public int HealthDelta { get; set; }
 
-        [Size(6)]
+        [Size(Method = SizeMethod.FixedSize, Param = 6)]
         public int[] PowerDelta { get; set; }
 
-        [Size(4)]
+        [Size(Method = SizeMethod.FixedSize, Param = 4)]
         public int[] StatDelta { get; set; }
 
         public int Cp { get; set; }
@@ -43,7 +43,7 @@ namespace SniffExplorer.Legion.Packets
     [Packet(typeof(V22996.OpcodeServer), "SMSG_HEALTH_UPDATE"), TargetBuild(22996)]
     public struct ClientHealthUpdate
     {
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
         public int Health { get; set; }
         public int Unk { get; set; } // Huh. Not in WPP ??
     }
@@ -57,19 +57,19 @@ namespace SniffExplorer.Legion.Packets
         public int NewSkinColor { get; set; }
         public int NewFace { get; set; }
 
-        [Size(3)]
+        [Size(Method = SizeMethod.FixedSize, Param = 3)]
         public int[] NewCustomDisplay { get; set; }
     }
 
     [Packet(typeof(V22996.OpcodeServer), "SMSG_INSPECT_PVP"), TargetBuild(22996)]
     public struct UserClientInspectPVP
     {
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
 
         [BitField(3)]
         public int BracketCount { get; set; }
 
-        [Size("BracketCount")]
+        [Size(Method = SizeMethod.StreamedProperty, Param = "BracketCount")]
         public BracketData[] Brackets { get; set; }
     }
 
@@ -106,10 +106,10 @@ namespace SniffExplorer.Legion.Packets
         [Conditional("HasDisabledClassesMask", ConditionType.Equal, true)]
         public uint DisabledClassessMask { get; set; }
 
-        [Size("FactionChangeRestrictionCount")]
+        [Size(Method = SizeMethod.StreamedProperty, Param = "FactionChangeRestrictionCount")]
         public ClientRestrictedFactionChangeRule[] FactionChangeRestrictions { get; set; }
 
-        [Size("CharacterCount")]
+        [Size(Method = SizeMethod.StreamedProperty, Param = "CharacterCount")]
         public ClientCharacterListEntry[] Characters { get; set; }
     }
 
@@ -123,7 +123,7 @@ namespace SniffExplorer.Legion.Packets
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public struct ClientCharacterListEntry
     {
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
         public byte ListPosition { get; set; }
         public byte RaceID { get; set; }
         public byte ClassID { get; set; }
@@ -133,7 +133,7 @@ namespace SniffExplorer.Legion.Packets
         public byte HairStyle { get; set; }
         public byte HairColor { get; set; }
         public byte FacialHairStyle { get; set; }
-        [Size(3)]
+        [Size(Method = SizeMethod.FixedSize, Param = 3)]
         public int[] NewCustomDisplay { get; set; }
 
         public byte ExperienceLevel { get; set; }
@@ -141,18 +141,18 @@ namespace SniffExplorer.Legion.Packets
         public uint MapID { get; set; }
 
         public Vector3 PreloadPos { get; set; }
-        public ObjectGuid Guild { get; set; }
-        [Size(3)]
+        public ObjectGuid128 Guild { get; set; }
+        [Size(Method = SizeMethod.FixedSize, Param = 3)]
         public uint[] Flags { get; set; }
 
         public uint PetCreatureDisplayID { get; set; }
         public uint PetExperienceLevel { get; set; }
         public uint PetCreatureFamilyID { get; set; }
 
-        [Size(2)]
+        [Size(Method = SizeMethod.FixedSize, Param = 2)]
         public uint[] ProfessionIDs { get; set; }
 
-        [Size(23)]
+        [Size(Method = SizeMethod.FixedSize, Param = 23)]
         public ClientCharacterListItem[] InventoryItems { get; set; }
 
         public DateTime LastPlayedTime { get; set; }
@@ -168,7 +168,7 @@ namespace SniffExplorer.Legion.Packets
         [BitField(5)]
         public int UnkWod61x { get; set; }
 
-        [StringSize("NameLength")]
+        [Size(Method = SizeMethod.StreamedProperty, Param = "NameLength")]
         public string Name { get; set; }
 
         public override string ToString() => $"{Name} (Level {ExperienceLevel})";

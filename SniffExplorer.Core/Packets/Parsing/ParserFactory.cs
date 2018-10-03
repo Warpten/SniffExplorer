@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
-using SniffExplorer.Core.Packets.Parsing.Attributes;
+using SniffExplorer.Core.Attributes;
 using SniffExplorer.Core.Packets.Types;
 using SniffExplorer.Core.Utils;
 
@@ -28,6 +28,9 @@ namespace SniffExplorer.Core.Packets.Parsing
         {
             var structureExpr = Expression.Variable(leftAssignmentExpr.Type);
 
+            var exitLabel = Expression.Label(structureExpr.Type);
+            var exitLabelTarget = Expression.Label(exitLabel, Expression.Default(structureExpr.Type));
+
             var bodyExpressions = new List<Expression> {
                 Expression.Assign(structureExpr, Expression.New(leftAssignmentExpr.Type))
             };
@@ -35,12 +38,29 @@ namespace SniffExplorer.Core.Packets.Parsing
             // ReSharper disable once LoopCanBeConvertedToQuery
             foreach (var prop in leftAssignmentExpr.Type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
+                if (prop.GetCustomAttribute<ResetBitsAttribute>() != null)
+                {
+                    bodyExpressions.Add(Expression.Call(argExpr, ExpressionUtils.ResetBitReader));
+                }
+
+                var stopAttribute = prop.GetCustomAttribute<StopIfAttribute>();
+
+                if (stopAttribute != null)
+                {
+                    var leftHand = stopAttribute.GetLeftHandExpression(structureExpr);
+                    var comparison = stopAttribute.GetComparisonExpression(leftHand);
+
+                    bodyExpressions.Add(Expression.IfThen(comparison, Expression.Return(exitLabel, structureExpr)));
+                }
+
                 var reader = GenerateMemberReader(prop, structureExpr, argExpr);
                 if (reader == null)
                     continue;
 
                 bodyExpressions.Add(reader);
             }
+
+            bodyExpressions.Add(exitLabelTarget);
 
             // converToValueType is only true for the top node.
             if (!convertToValueType)
@@ -65,20 +85,11 @@ namespace SniffExplorer.Core.Packets.Parsing
             if (conditionalAttribute == null)
                 return readExpression;
 
-            var referenceProperty = structureExpr.Type.GetProperty(conditionalAttribute.PropertyName);
+            var referenceProperty = conditionalAttribute.GetLeftHandExpression(structureExpr);
             if (referenceProperty == null)
                 return readExpression;
 
-            var leftExpression = Expression.MakeMemberAccess(structureExpr, referenceProperty);
-
-            if (conditionalAttribute.Right.GetType() == referenceProperty.PropertyType)
-                readExpression = Expression.IfThen(conditionalAttribute.GetComparisonExpression(leftExpression),
-                    readExpression);
-            else
-                throw new InvalidOperationException(
-                    $@"Property {prop.Name} has a condition where the types of both operands do not match: got {
-                        conditionalAttribute.Right.GetType().Name}, expected {prop.PropertyType.Name}");
-
+            readExpression = Expression.IfThen(conditionalAttribute.GetComparisonExpression(referenceProperty), readExpression);
             return readExpression;
         }
 
@@ -90,19 +101,27 @@ namespace SniffExplorer.Core.Packets.Parsing
             var bitReaderExpr = propInfo.GetCustomAttribute<BitFieldAttribute>()?
                 .GetCallExpression(argExpr, propInfo.PropertyType.GetElementType());
 
-            Expression arraySizeExpr;
+            Expression arraySizeExpr = null;
             if (arraySizeAttr != null)
             {
-                if (!arraySizeAttr.Streamed)
-                    arraySizeExpr = Expression.Constant(arraySizeAttr.ArraySize);
-                else if (arraySizeAttr.InPlace)
-                    arraySizeExpr = bitReaderExpr ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]);
-                else
-                    arraySizeExpr = Expression.MakeMemberAccess(tExpr,
-                        packetStructType.GetProperty(arraySizeAttr.PropertyName));
+                switch (arraySizeAttr.Method)
+                {
+                    case SizeMethod.FixedSize:
+                        arraySizeExpr = Expression.Constant((int)arraySizeAttr.Param);
+                        break;
+                    case SizeMethod.InPlace:
+                        if (arraySizeAttr.Param == null)
+                            arraySizeExpr = bitReaderExpr ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]);
+                        else
+                            arraySizeExpr = Expression.Call(argExpr, ExpressionUtils.Bits, Expression.Constant((int)arraySizeAttr.Param));
+                        break;
+                    case SizeMethod.StreamedProperty:
+                        arraySizeExpr = Expression.MakeMemberAccess(tExpr, tExpr.Type.GetProperty((string)arraySizeAttr.Param));
+                        break;
+                }
             }
             else
-                throw new InvalidOperationException($"Property {propInfo.Name} is missing an array size specification");
+                throw new InvalidOperationException($"Property '{propInfo.DeclaringType.FullName}.{propInfo.Name}' is missing an array size specification!");
 
             var exitLabelExpr = Expression.Label();
             var itrExpr = Expression.Variable(typeof (int));
@@ -157,7 +176,7 @@ namespace SniffExplorer.Core.Packets.Parsing
                 propType = propType.GetElementType();
 
             if (propType.IsArray)
-                throw new NotImplementedException($"Field {propInfo.Name} is a multi-dimensional array");
+                throw new NotImplementedException($"Field {propInfo.Name} is a multi-dimensional array, which are not implemented! Try defining a sub-structure.");
 
             var bitReaderExpression = propInfo.GetCustomAttribute<BitFieldAttribute>()?.GetCallExpression(argExpr, propType);
 
@@ -185,29 +204,39 @@ namespace SniffExplorer.Core.Packets.Parsing
                     readerExpression = Expression.Call(argExpr, ExpressionUtils.Base[typeCode]);
                     break;
                 case TypeCode.UInt64:
-                    readerExpression = Expression.Call(argExpr, packedAttr != null ?
-                        ExpressionUtils.PackedUInt64 :
-                        ExpressionUtils.Base[TypeCode.UInt64]);
+                    readerExpression = Expression.Call(argExpr, packedAttr != null ? ExpressionUtils.PackedUInt64 : ExpressionUtils.Base[TypeCode.UInt64]);
                     break;
                 case TypeCode.DateTime:
-                    readerExpression = Expression.Call(argExpr, packedAttr != null
-                        ? ExpressionUtils.ReadPackedTime
-                        : ExpressionUtils.ReadTime);
+                    readerExpression = Expression.Call(argExpr, packedAttr != null ? ExpressionUtils.ReadPackedTime : ExpressionUtils.ReadTime);
                     break;
                 case TypeCode.String:
                 {
                     var stringAttr = propInfo.GetCustomAttribute<StringSizeAttribute>();
                     if (stringAttr != null)
                     {
-                        if (!stringAttr.Streamed)
-                            readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
-                                Expression.Constant(stringAttr.ArraySize));
-                        else if (!stringAttr.InPlace)
-                            readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
-                                Expression.MakeMemberAccess(tExpr, tExpr.Type.GetProperty(stringAttr.PropertyName)));
-                        else
-                            readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
-                                bitReaderExpression ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
+                        switch (stringAttr.Method)
+                        {
+                            case SizeMethod.FixedSize:
+                                readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
+                                    Expression.Constant((int)stringAttr.Param));
+                                break;
+                            case SizeMethod.InPlace:
+                                if (stringAttr.Param == null)
+                                {
+                                    readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
+                                        bitReaderExpression ?? Expression.Call(argExpr, ExpressionUtils.Base[TypeCode.Int32]));
+                                }
+                                else
+                                {
+                                    readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
+                                        Expression.Call(argExpr, ExpressionUtils.Bits, Expression.Constant((int)stringAttr.Param)));
+                                }
+                                break;
+                            case SizeMethod.StreamedProperty:
+                                readerExpression = Expression.Call(argExpr, ExpressionUtils.String,
+                                    Expression.MakeMemberAccess(tExpr, tExpr.Type.GetProperty((string)stringAttr.Param)));
+                                break;
+                        }
                     }
                     else
                         readerExpression = Expression.Call(argExpr, ExpressionUtils.CString);
@@ -218,9 +247,13 @@ namespace SniffExplorer.Core.Packets.Parsing
             if (propType.IsEnum && readerExpression != null)
                 readerExpression = Expression.Convert(readerExpression, propType);
 
-            if (propType.IsAssignableFrom(typeof(ObjectGuid)))
-                readerExpression = Expression.Call(argExpr, ExpressionUtils.ObjectGuid);
+            if (typeof(IObjectGuid).IsAssignableFrom(propType))
+            {
+                var rawGuidAttr = propInfo.GetCustomAttribute<RawGuidAttribute>() != null;
 
+                var methodInfo = (!rawGuidAttr ? ExpressionUtils.ReadPackedGUID : ExpressionUtils.ReadGUID).MakeGenericMethod(propType);
+                readerExpression = Expression.Call(argExpr, methodInfo);
+            }
             return readerExpression;
         }
 

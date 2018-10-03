@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using SniffExplorer.Core.Packets.Parsing;
 
@@ -9,15 +7,13 @@ namespace SniffExplorer.Core.Utils
 {
     public static class ExpressionUtils
     {
-        public static readonly MethodInfo ObjectGuid = typeof(PacketReader).GetMethod("ReadObjectGuid",
-            Type.EmptyTypes);
-        public static readonly MethodInfo String = typeof(PacketReader).GetMethod("ReadString",
-            typeof(int));
-        public static readonly MethodInfo CString = typeof(PacketReader).GetMethod("ReadCString",
-            Type.EmptyTypes);
+        public static readonly MethodInfo ResetBitReader = typeof(PacketReader).GetMethod("ResetBitReader", Type.EmptyTypes);
+        public static readonly MethodInfo ReadGUID = typeof(PacketReader).GetMethod("ReadGUID", Type.EmptyTypes);
+        public static readonly MethodInfo ReadPackedGUID = typeof(PacketReader).GetMethod("ReadPackedGUID", Type.EmptyTypes);
+        public static readonly MethodInfo String = typeof(PacketReader).GetMethod("ReadString", typeof(int));
+        public static readonly MethodInfo CString = typeof(PacketReader).GetMethod("ReadCString", Type.EmptyTypes);
 
-        public static readonly MethodInfo PackedUInt64 = typeof(PacketReader).GetMethod("ReadPackedUInt64",
-            Type.EmptyTypes);
+        public static readonly MethodInfo PackedUInt64 = typeof(PacketReader).GetMethod("ReadPackedUInt64", Type.EmptyTypes);
 
         public static readonly MethodInfo Bit = typeof(PacketReader).GetMethod("ReadBit", Type.EmptyTypes);
         public static readonly MethodInfo Bits = typeof(PacketReader).GetMethod("ReadBits", typeof(int));
@@ -27,7 +23,7 @@ namespace SniffExplorer.Core.Utils
 
         public static readonly Dictionary<TypeCode, MethodInfo> Base = new Dictionary<TypeCode, MethodInfo>()
         {
-            { TypeCode.Boolean, typeof (PacketReader).GetMethod("ReadBit", Type.EmptyTypes) },
+            { TypeCode.Boolean, Bit },
             { TypeCode.SByte,   typeof (PacketReader).GetMethod("ReadSByte", Type.EmptyTypes) },
             { TypeCode.Int16,   typeof (PacketReader).GetMethod("ReadInt16", Type.EmptyTypes) },
             { TypeCode.Int32,   typeof (PacketReader).GetMethod("ReadInt32", Type.EmptyTypes) },

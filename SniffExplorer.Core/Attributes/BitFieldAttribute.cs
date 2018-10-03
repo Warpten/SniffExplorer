@@ -2,16 +2,17 @@ using System;
 using System.Linq.Expressions;
 using SniffExplorer.Core.Utils;
 
-namespace SniffExplorer.Core.Packets.Parsing.Attributes
+namespace SniffExplorer.Core.Attributes
 {
     /// <summary>
-    /// Use this attribute to indicate that the associated property is
-    /// stored on bits.
+    /// Use this attribute to indicate that bit count is associated to the property.
+    ///
+    /// If you want to read bits on a new alignment, add <see cref="ResetBitsAttribute"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public sealed class BitFieldAttribute : Attribute
     {
-        public int BitSize { get; }
+        private int BitSize { get; }
 
         public BitFieldAttribute(int bitSize = 1)
         {

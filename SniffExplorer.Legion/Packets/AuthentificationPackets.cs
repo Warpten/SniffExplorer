@@ -14,9 +14,9 @@ namespace SniffExplorer.Legion.Packets
         public uint RegionID { get; set; }
         public uint BattlegroupID { get; set; }
         public uint RealmID { get; set; }
-        [Size(16)]
+        [Size(Method = SizeMethod.FixedSize, Param = 16)]
         public byte[] LocalChallenge { get; set; }
-        [Size(24)]
+        [Size(Method = SizeMethod.FixedSize, Param = 24)]
         public byte[] Digest { get; set; }
         public bool UsesIPv6 { get; set; }
 

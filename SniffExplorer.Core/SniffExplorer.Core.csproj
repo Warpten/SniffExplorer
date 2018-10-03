@@ -42,25 +42,34 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="EnumProvider.cs" />
-    <Compile Include="OpcodeAttribute.cs" />
-    <Compile Include="Packets\Parsing\Attributes\StringSizeAttribute.cs" />
+    <Compile Include="Attributes\CallbackAttribute.cs" />
+    <Compile Include="Entity.cs" />
+    <Compile Include="EntityStore.cs" />
+    <Compile Include="Events\EventDispatcher.cs" />
+    <Compile Include="Packets\Opcodes.cs" />
+    <Compile Include="Attributes\RawGuidAttribute.cs" />
+    <Compile Include="Attributes\ResetBitsAttribute.cs" />
+    <Compile Include="Attributes\SizeAttribute.cs" />
+    <Compile Include="Attributes\StreamedGuidAttribute.cs" />
     <Compile Include="Packets\Parsing\BinaryProcessor.cs" />
-    <Compile Include="Packets\Parsing\Attributes\BitFieldAttribute.cs" />
-    <Compile Include="Packets\Parsing\Attributes\ConditionalAttribute.cs" />
-    <Compile Include="Packets\Parsing\Attributes\SizeAttribute.cs" />
-    <Compile Include="Packets\Parsing\Attributes\IgnoreAttribute.cs" />
-    <Compile Include="Packets\Parsing\Attributes\PackedFieldAttribute.cs" />
-    <Compile Include="Packets\Parsing\Attributes\PacketAttribute.cs" />
+    <Compile Include="Attributes\BitFieldAttribute.cs" />
+    <Compile Include="Attributes\ConditionalAttribute.cs" />
+    <Compile Include="Attributes\IgnoreAttribute.cs" />
+    <Compile Include="Attributes\PackedFieldAttribute.cs" />
+    <Compile Include="Attributes\PacketAttribute.cs" />
+    <Compile Include="Packets\Parsing\OpcodeProvider.cs" />
     <Compile Include="Packets\Parsing\PacketReader.cs" />
     <Compile Include="Packets\Parsing\ParserFactory.cs" />
-    <Compile Include="Packets\Types\HighGuid.cs" />
+    <Compile Include="Packets\Types\HighGuidType.cs" />
+    <Compile Include="Packets\Types\IObjectGuid.cs" />
     <Compile Include="Packets\Types\MetaAttribute.cs" />
-    <Compile Include="Packets\Types\ObjectGuid.cs" />
+    <Compile Include="Packets\Types\ObjectGuid128.cs" />
+    <Compile Include="Packets\Types\ObjectGuid64.cs" />
     <Compile Include="Packets\Types\SharedDefines.cs" />
     <Compile Include="Packets\Types\Vector3.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TargetBuildAttribute.cs" />
+    <Compile Include="Utils\BiDictionary.cs" />
     <Compile Include="Utils\ExpressionUtils.cs" />
     <Compile Include="Utils\MiscExtensions.cs" />
   </ItemGroup>

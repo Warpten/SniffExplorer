@@ -10,17 +10,17 @@ namespace SniffExplorer.Legion.Packets
     [Packet(typeof(V22996.OpcodeServer), "SMSG_ACCOUNT_DATA_TIMES"), TargetBuild(22996)]
     public struct ClientAccountDataTimes
     {
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
         [TypeConverter(typeof(DateTimeConverter))]
         public DateTime ServerTime { get; set; }
-        [Size(8), TypeConverter(typeof(DateTimeConverter))]
+        [Size(Method = SizeMethod.FixedSize, Param = 8), TypeConverter(typeof(DateTimeConverter))]
         public DateTime[] AccountTimes { get; set; }
     }
 
     [Packet(typeof(V22996.OpcodeClient), "CMSG_REQUEST_ACCOUNT_DATA"), TargetBuild(22996)]
     public struct UserClientRequestAccountData
     {
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
         [BitField(3)]
         public ushort DataType { get; set; }
     }

@@ -17,7 +17,7 @@ namespace SniffExplorer.Legion.Packets
     [Packet(typeof(V22996.OpcodeServer), "SMSG_UPDATE_ACTION_BUTTONS"), TargetBuild(22996)]
     public struct ClientUpdateActionButtons
     {
-        [Size(132)]
+        [Size(Method = SizeMethod.FixedSize, Param = 132)]
         public ActionButton[] Buttons { get; set; }
         public byte Reason { get; set; }
     }

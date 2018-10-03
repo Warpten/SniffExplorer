@@ -1,6 +1,6 @@
 using System;
 
-namespace SniffExplorer.Core.Packets.Parsing.Attributes
+namespace SniffExplorer.Core.Attributes
 {
     /// <summary>
     /// Use this attribute to have the packets de-serializer ignore

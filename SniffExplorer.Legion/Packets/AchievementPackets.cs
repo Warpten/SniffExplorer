@@ -12,7 +12,7 @@ namespace SniffExplorer.Legion.Packets
     {
         public uint ID { get; set; }
         public ulong Quantity { get; set; }
-        public ObjectGuid GUID { get; set; }
+        public ObjectGuid128 GUID { get; set; }
         [PackedField, TypeConverter(typeof(DateTimeConverter))]
         public DateTime Date { get; set; }
         [TypeConverter(typeof(DateTimeConverter))]
@@ -33,9 +33,9 @@ namespace SniffExplorer.Legion.Packets
         [Browsable(false)]
         public int ProgressCount { get; set; }
 
-        [Size("EarnedCount")]
+        [Size(Method = SizeMethod.StreamedProperty, Param = "EarnedCount")]
         public EarnedAchievement[] Earned { get; set; }
-        [Size("ProgressCount")]
+        [Size(Method = SizeMethod.StreamedProperty, Param = "ProgressCount")]
         public CriteriaProgress[] Progress { get; set; }
     }
 
@@ -45,7 +45,7 @@ namespace SniffExplorer.Legion.Packets
         public uint ID { get; set; }
         [PackedField, TypeConverter(typeof(DateTimeConverter))]
         public DateTime Date { get; set; }
-        public ObjectGuid Owner { get; set; }
+        public ObjectGuid128 Owner { get; set; }
         public int VirtualRealmAddress { get; set; }
         public int NativeRealmAddress { get; set; }
     }
@@ -55,7 +55,7 @@ namespace SniffExplorer.Legion.Packets
     {
         public uint ID { get; set; }
         public ulong Quantity { get; set; }
-        public ObjectGuid Player { get; set; }
+        public ObjectGuid128 Player { get; set; }
         public int Flags { get; set; }
         [PackedField, TypeConverter(typeof(DateTimeConverter))]
         public DateTime Date { get; set; }
@@ -82,9 +82,9 @@ namespace SniffExplorer.Legion.Packets
     public struct ClientAchievementEarned
     {
         [TypeConverter(typeof(DateTimeConverter))]
-        public ObjectGuid Sender { get; set; }
+        public ObjectGuid128 Sender { get; set; }
         [TypeConverter(typeof(DateTimeConverter))]
-        public ObjectGuid Earner { get; set; }
+        public ObjectGuid128 Earner { get; set; }
         public int AchievementID { get; set; }
         [PackedField, TypeConverter(typeof(DateTimeConverter))]
         public DateTime Time { get; set; }
@@ -96,7 +96,7 @@ namespace SniffExplorer.Legion.Packets
     [Packet(typeof(V22996.OpcodeServer), "SMSG_RESPOND_INSPECT_ACHIEVEMENTS"), TargetBuild(22996)]
     public struct ClientRespondInspectAchievements
     {
-        public ObjectGuid Player { get; set; }
+        public ObjectGuid128 Player { get; set; }
         public AllAchievements Data { get; set; }
     }
 }

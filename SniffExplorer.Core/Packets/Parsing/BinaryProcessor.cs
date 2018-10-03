@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using SniffExplorer.Core.Packets.Parsing.Attributes;
+using SniffExplorer.Core.Attributes;
 
 namespace SniffExplorer.Core.Packets.Parsing
 {
@@ -15,21 +15,10 @@ namespace SniffExplorer.Core.Packets.Parsing
         public string Locale { get; private set; }
         public int Count { get; private set; }
 
+        public IOpcodeProvider OpcodeProvider { get; private set; }
+
         private Dictionary<Type, Func<PacketReader, ValueType>> _typeLoaders = new Dictionary<Type, Func<PacketReader, ValueType>>();
-        private Dictionary<object, Type> _opcodeStructs = new Dictionary<object, Type>();
-
-        public object GetOpcode(uint opcodeValue, uint direction)
-        {
-            var targetEnum = Assembly.GetTypes().First(type =>
-            {
-                if (!type.IsEnum)
-                    return false;
-
-                var targetAttribute = type.GetCustomAttributes<OpcodeAttribute>();
-                return targetAttribute.Any(attr => attr.TargetBuilds.Contains(Build) && attr.Direction == direction);
-            });
-            return targetEnum == null ? null : Enum.ToObject(targetEnum, opcodeValue);
-        }
+        private Dictionary<Opcodes, Type> _opcodeStructs = new Dictionary<Opcodes, Type>();
 
         public Assembly Assembly { get; private set; }
 
@@ -43,18 +32,25 @@ namespace SniffExplorer.Core.Packets.Parsing
 
             foreach (var type in Assembly.GetTypes())
             {
-                var opcodeAttrs = type.GetCustomAttributes<PacketAttribute>().ToArray();
-                if (opcodeAttrs.Length == 0)
-                    continue;
-
                 if (type.GetCustomAttributes<TargetBuildAttribute>().Any(t => t.Build == Build))
                 {
+                    var opcodeAttrs = type.GetCustomAttributes<PacketAttribute>().ToArray();
+                    if (opcodeAttrs.Length == 0)
+                        continue;
+
                     foreach (var opcodeAttribute in opcodeAttrs)
                         _opcodeStructs[opcodeAttribute.Opcode] = type;
 
                     _typeLoaders[type] = ParserFactory.GeneratePacketReader(type);
                 }
+                else if (typeof(IOpcodeProvider).IsAssignableFrom(type))
+                {
+                    OpcodeProvider = (IOpcodeProvider)Activator.CreateInstance(type);
+                }
             }
+
+            if (OpcodeProvider == null)
+                throw new InvalidProgramException("Unable to find an implementation of IOpcodeProvider to instanciate!");
         }
 
         private Assembly SelectAssembly()
@@ -110,7 +106,7 @@ namespace SniffExplorer.Core.Packets.Parsing
 
                 while (sniffStream.BaseStream.Position < sniffStream.BaseStream.Length)
                 {
-                    var direction = sniffStream.ReadUInt32();
+                    var direction = (PacketDirection)sniffStream.ReadUInt32();
                     var connectionID = sniffStream.ReadUInt32();
                     var timeStamp = startTimeStamp.AddMilliseconds(sniffStream.ReadUInt32() - startTickCount);
                     var optionalHeaderLength = sniffStream.ReadUInt32();
@@ -137,14 +133,12 @@ namespace SniffExplorer.Core.Packets.Parsing
                     using (var memoryStream = new MemoryStream(packet.Data, false))
                     using (var packetReader = new PacketReader(memoryStream, packet.Data.Length))
                     {
-                        var opcodeName = GetOpcode(packet.Opcode, packet.Direction);
-                        Type targetType;
-                        if (!_opcodeStructs.TryGetValue(opcodeName, out targetType))
+                        var opcodeName = OpcodeProvider.ValueToOpcode(packet.Opcode, packet.Direction);
+                        if (!_opcodeStructs.TryGetValue(opcodeName, out Type targetType))
                             return;
 
-                        Func<PacketReader, ValueType> reader;
-                        if (!_typeLoaders.TryGetValue(targetType, out reader))
-                            return; //! TODO: Assert here
+                        if (!_typeLoaders.TryGetValue(targetType, out var reader))
+                            return; //! TODO: Assert here when we successfully implemented every structure (aka never)
 
                         OnPacketParsed?.Invoke(string.Intern(opcodeName.ToString()), reader(packetReader), packet.ConnectionID,
                             packet.TimeStamp);
@@ -172,7 +166,7 @@ namespace SniffExplorer.Core.Packets.Parsing
             public uint ConnectionID { get; set; }
             public DateTime TimeStamp { get; set; }
             public byte[] Data { get; set; }
-            public uint Direction { get; set; }
+            public PacketDirection Direction { get; set; }
         }
     }
 }

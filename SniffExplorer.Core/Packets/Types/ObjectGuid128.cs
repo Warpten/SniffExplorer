@@ -4,20 +4,28 @@ using SniffExplorer.Core.Packets.Parsing;
 namespace SniffExplorer.Core.Packets.Types
 {
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class ObjectGuid
+    public sealed class ObjectGuid128 : IObjectGuid
     {
-        public ulong LowPart { get; protected set; }
-        public ulong HighPart { get; protected set; }
+        public ulong LowPart { get; private set; }
+        public ulong HighPart { get; private set; }
 
-        public virtual byte SubType => (byte) (HighPart & 0x3F);
-        public virtual ushort RealmId => (ushort) ((HighPart >> 42) & 0x1FFF);
-        public virtual uint ServerId => (uint) ((LowPart >> 40) & 0xFFFFFF);
-        public virtual ushort MapId => (ushort) ((HighPart >> 29) & 0x1FFF);
-        public virtual uint Entry => (uint) ((HighPart >> 6) & 0x7FFFFF);
-        public virtual ulong Low => LowPart & 0xFFFFFFFFFF;
-        public virtual HighGuidType HighType => (HighGuidType)((HighPart >> 58) & 0x3F);
+        public byte SubType              => (byte) (HighPart & 0x3F);
+        public ushort RealmId            => (ushort) ((HighPart >> 42) & 0x1FFF);
+        public uint ServerId             => (uint) ((LowPart >> 40) & 0xFFFFFF);
+        public ushort MapId              => (ushort) ((HighPart >> 29) & 0x1FFF);
+        public uint Entry                => (uint) ((HighPart >> 6) & 0x7FFFFF);
+        public ulong Low                 => LowPart & 0xFFFFFFFFFF;
+        public HighGuidType HighType     => (HighGuidType)((HighPart >> 58) & 0x3F);
 
-        public virtual void Read(PacketReader reader)
+        public bool IsEmpty() => LowPart == 0L || HighPart == 0L;
+
+        public void Read(PacketReader reader)
+        {
+            LowPart = reader.ReadUInt64();
+            HighPart = reader.ReadUInt64();
+        }
+
+        public void ReadPacked(PacketReader reader)
         {
             var loMask = reader.ReadByte();
             var hiMask = reader.ReadByte();

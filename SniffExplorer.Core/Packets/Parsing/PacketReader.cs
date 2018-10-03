@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 using SniffExplorer.Core.Packets.Types;
-using SniffExplorer.Core.Utils;
 
 namespace SniffExplorer.Core.Packets.Parsing
 {
@@ -127,12 +125,12 @@ namespace SniffExplorer.Core.Packets.Parsing
             return ((_curbitval >> (7 - _bitpos)) & 1) != 0;
         }
 
-        public uint ReadBits(int bits)
+        public int ReadBits(int bits)
         {
-            uint value = 0;
+            var value = 0;
             for (var i = bits - 1; i >= 0; --i)
                 if (ReadBit())
-                    value |= (uint)(1 << i);
+                    value |= (int)(1 << i);
 
             return value;
         }
@@ -192,11 +190,18 @@ namespace SniffExplorer.Core.Packets.Parsing
             return res;
         }
 
-        public ObjectGuid ReadObjectGuid()
+        public T ReadGUID<T>() where T : IObjectGuid, new()
         {
-            var objGuid = new ObjectGuid();
-            objGuid.Read(this);
-            return objGuid;
+            var guid = new T();
+            guid.Read(this);
+            return guid;
+        }
+
+        public T ReadPackedGUID<T>() where T : IObjectGuid, new()
+        {
+            var guid = new T();
+            guid.ReadPacked(this);
+            return guid;
         }
         #endregion
     }
